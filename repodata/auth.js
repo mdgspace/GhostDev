@@ -10,9 +10,7 @@ function getClientId() {
 async function getCode(){
     const client_id = getClientId();
     const headers = {'Content-Type':'application/json',
-        'Accept':'application/json',
-        'Access-Control-Allow-Origin':'*',
-        'Access-Control-Allow-Methods':'POST,PATCH,OPTIONS'
+        'Accept':'application/json'
     }
     try {
         const response = await fetch(getCodeUrl, {
@@ -26,7 +24,6 @@ async function getCode(){
             const device_code = result.device_code;
             const user_code = result.user_code;
             return (user_code)
-            console.log(result)
         } else {
             const errorData = response;
             console.error("error:", errorData);
