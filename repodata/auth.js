@@ -70,8 +70,7 @@ async function pollForToken(client_id, device_code, interval = 5, expires_in = 9
             if (result.access_token) {
                 console.log("Access token received!");
                 console.log(result);
-                
-                // Optionally save the token
+
                 fs.writeFileSync("ghostdev/access_token.txt", result.access_token);
                 return;
             } else if (result.error === "authorization_pending"){
