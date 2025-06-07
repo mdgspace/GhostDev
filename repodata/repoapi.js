@@ -28,7 +28,11 @@ async function fetchRepositories() {
     }
 
     const data = await response.json();
-    if (data.length === 0) {
+
+    if(data.length != 0){
+      fs.writeFileSync("ghostdev/username.txt", data[0].owner.login);
+    }
+    if (data.length === 0) { 
       break;
     }
 
