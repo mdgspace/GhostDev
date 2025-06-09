@@ -1,5 +1,5 @@
 import gradio as gr
-from main import exctract_code_from_selected_files, generate_code_from_llm
+from main import exctract_code_from_selected_files, generate_code_from_llm, profile_from_code
 
 file_to_code_json = {}
 
@@ -11,6 +11,10 @@ def save_files(files):
 def process_user_input_code(code):
     global file_to_code_json
     return generate_code_from_llm(code, file_to_code_json)
+
+def analyze_coding_behavior():
+    global file_to_code_json
+    return profile_from_code(file_to_code_json)
 
 
 with gr.Blocks() as test_client:
@@ -24,7 +28,11 @@ with gr.Blocks() as test_client:
     
     code_process_button = gr.Button("Process Code")
 
+    code_analysis_display = gr.TextArea(label="LLM Analysis Result", interactive=False)
+    analyze_button = gr.Button("Analyze")
+
     file_save_button.click(save_files, inputs=file_selector, outputs=output)
     code_process_button.click(process_user_input_code, inputs=code_input, outputs=output_display)
+    analyze_button.click(analyze_coding_behavior, outputs=code_analysis_display)
 
-test_client.launch()
+test_client.launch(server_name="0.0.0.0", server_port=7860)
