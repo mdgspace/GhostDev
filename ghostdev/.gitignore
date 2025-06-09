@@ -1,0 +1,6 @@
+node_modules
+.vscode-test/
+*.vsix
+.env
+client_id.txt
+access_token.txt
