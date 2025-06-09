@@ -15,6 +15,15 @@ def exctract_code_from_selected_files(selected_files):
     
     return file_to_code_json
 
+def profile_from_code(file_to_code_json):
+    prompt = f'''Analyze the following code files and evaluate the user's coding practices. 
+        Focus on aspects such as naming conventions for functions and variables, 
+        code structure, spacing, error handling, commenting quality, and overall coding style. 
+        Frame a persona of the user based on these practices and display the results as points per file, 
+        with the filename followed by the behavioral patterns:\n\n\n\n{file_to_code_json}'''
+    
+    return generate_llm_response(prompt=prompt)
+
 def generate_code_from_llm(code, file_to_code_json):
     context = {
         "current_code" : code,
@@ -51,6 +60,9 @@ def generate_code_from_llm(code, file_to_code_json):
         - If the code is already well-written, return the original current_code unchanged.
     '''
 
+    return generate_llm_response(prompt=prompt)
+
+def generate_llm_response(prompt):
     try:
         payload = {
             "model": settings.LLM_MODEL,
@@ -61,7 +73,7 @@ def generate_code_from_llm(code, file_to_code_json):
             "top_k": settings.LLM_TOP_K,
         }
         
-        result = api.post(settings.LLM_API_URL, json=payload, timeout=30)
+        result = api.post(settings.LLM_API_URL, json=payload, timeout=300)
         
         result.raise_for_status()
         
