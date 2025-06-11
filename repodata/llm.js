@@ -1,9 +1,7 @@
 //import '../repodata/prompt.js'
-import {fetchDirectory} from '../repodata/repoDirStr.js'
+//import {fetchDirectory} from '../repodata/repoDirStr.js'
+import {directory_analysis} from '../repodata/dir_llm.js'
 async function prompting(){
-    const headers = {'Content-Type':'application/json',
-        'Accept':'application/json'
-    }
     try {
         const PROJECT_NAME = "PizzaGo"
         const TECH_STACK = "backend: Expressjs, frontend: React, database: dbsqlite"
@@ -11,8 +9,8 @@ async function prompting(){
         const DATABASE = "dbsqlite"
         const AUTHENTICATION = "yes-jwt"
         const SPECIFIC_DIFFERENTIATION = "nothing specific"
-        const EXAMPLE_STRUCTURES = await fetchDirectory()
-        
+        const USER_ANALYSIS = await directory_analysis()
+        console.log(USER_ANALYSIS)
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -38,14 +36,14 @@ async function prompting(){
                   - Authentication: ${AUTHENTICATION} # e.g., “yes - JWT”, “no”
                   Specific:
                   - Unique Aspect: ${SPECIFIC_DIFFERENTIATION}  # e.g., “monorepo with shared components”, “plugin-based modules”, etc.
-                  User’s Example Structures:
-                  ${EXAMPLE_STRUCTURES}
-            
+                  User’s Unique Directory Making: ${USER_ANALYSIS} [IMPORTANT]
+                  
                   Instructions:
-                  1. Pay special attention to the Example Structures as they reflect the directory making style of the user. [IMPORTANT]
-                  2. Consider best practices for ${TECH_STACK} and the features listed.
-                  3. Reflect the unique aspect ${SPECIFIC_DIFFERENTIATION} in the structure.
-                  4. Produce only the list of paths as comma-separated values in curly braces.`
+                  1. Pay special attention to the User’s Unique Directory Making as they reflect the directory making style of the user. However keep in mind the ***rating*** provided and use it as a weight to how much it should affect the currect directory structure. [IMPORTANT]
+                  2. See not only the flows of the above mentioned but also the Habits or practices of the user.
+                  3. Consider best practices for ${TECH_STACK} and the features listed.
+                  4. Reflect the unique aspect ${SPECIFIC_DIFFERENTIATION} in the structure.
+                  5. Produce only the list of paths as comma-separated values in curly braces.`
             }
           ]
         })
