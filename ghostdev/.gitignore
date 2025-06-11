@@ -4,3 +4,4 @@ node_modules
 .env
 client_id.txt
 access_token.txt
+username.txt

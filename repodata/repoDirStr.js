@@ -16,7 +16,6 @@ function getUsername() {
 const username = getUsername()
 const accessToken = getAccessToken()
 
-
 const headers={
     'Authorization': `Bearer ${accessToken}`,
     'Accept': 'application/vnd.github+json',
@@ -31,15 +30,10 @@ async function fetchDirectory() {
       headers: headers
     })
     const data = await response.json()
-    //console.log(data)
     const treeSHA = data.commit.commit.tree.sha;
-    //console.log(`Tree SHA for branch 'main':`, treeSHA);
 
     const treeRes = await fetch(`https://api.github.com/repos/${username}/${arr[i]}/git/trees/${treeSHA}?recursive=1`, { headers });
     const treeData = await treeRes.json();
-    //console.log(`\n📁 Directory structure of People_status:`);
-    //treeData.tree?.forEach(item => {
-    //console.log(`${item.type === 'tree' ? '📂' : '📄'} ${item.path}`);});
     var folders = [];
     var files = [];
     treeData.tree?.forEach(item => {
@@ -55,12 +49,9 @@ async function fetchDirectory() {
         folders: folders,
         files: files
     });
-  }
-    
-    
-    //console.log(folders, files)
+  };
     return allRepoData
 }
 
-var allRepoData = await fetchDirectory();
-console.log(allRepoData) 
+
+export {fetchDirectory};
