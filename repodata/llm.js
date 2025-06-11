@@ -40,12 +40,12 @@ async function prompting(){
                   - Unique Aspect: ${SPECIFIC_DIFFERENTIATION}  # e.g., “monorepo with shared components”, “plugin-based modules”, etc.
                   User’s Example Structures:
                   ${EXAMPLE_STRUCTURES}
-                  
-                  (Here include one or more comma-separated lists in curly braces that reflect directory structures the user or team has used in past projects, e.g., { src/app.js, src/lib/utils.js, tests/test_app.js, ... }, possibly multiple variants.)
+            
                   Instructions:
-                  1. Consider best practices for ${TECH_STACK} and the features listed.
-                  2. Reflect the unique aspect ${SPECIFIC_DIFFERENTIATION} in the structure.
-                  3. Produce only the list of paths as comma-separated values in curly braces.`
+                  1. Pay special attention to the Example Structures as they reflect the directory making style of the user. [IMPORTANT]
+                  2. Consider best practices for ${TECH_STACK} and the features listed.
+                  3. Reflect the unique aspect ${SPECIFIC_DIFFERENTIATION} in the structure.
+                  4. Produce only the list of paths as comma-separated values in curly braces.`
             }
           ]
         })
