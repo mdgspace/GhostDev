@@ -1,10 +1,10 @@
 //import '../repodata/prompt.js'
 import {fetchDirectory} from '../repodata/repoDirStr.js'
 
-const fs = require('fs');
+import { readFileSync, writeFileSync } from 'fs';
 
 function getapikey() {
-  const data = fs.readFileSync('api_key.txt');
+  const data = readFileSync('api_key.txt');
   return data.toString();
 }
 
@@ -55,12 +55,14 @@ async function directory_analysis(){
 
         const data = await response.json();
         const prompt_response = data.choices[0].message.content;
+        console.log(data.choices[0].message.content)
         return prompt_response
-        //console.log(data.choices[0].message.content)
+        
     } catch (error) {
         console.log(error)
     }
     
 }
+directory_analysis();
 
 export {directory_analysis};
