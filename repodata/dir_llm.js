@@ -1,5 +1,16 @@
 //import '../repodata/prompt.js'
 import {fetchDirectory} from '../repodata/repoDirStr.js'
+
+const fs = require('fs');
+
+function getapikey() {
+  const data = fs.readFileSync('api_key.txt');
+  return data.toString();
+}
+
+const api_key = getapikey()
+
+
 async function directory_analysis(){
     try {
         const EXAMPLE_STRUCTURES = await fetchDirectory()
@@ -14,7 +25,7 @@ async function directory_analysis(){
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": "Bearer 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",
+          "Authorization": `Bearer ${api_key}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
