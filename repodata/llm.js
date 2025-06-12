@@ -2,10 +2,10 @@
 //import {fetchDirectory} from '../repodata/repoDirStr.js'
 import {directory_analysis} from '../repodata/dir_llm.js'
 
-const fs = require('fs');
+import {readFileSync} from 'fs';
 
 function getapikey() {
-  const data = fs.readFileSync('api_key.txt');
+  const data = readFileSync('api_key.txt');
   return data.toString();
 }
 
@@ -34,9 +34,9 @@ async function prompting(){
             {
               "role": "user",
               "content": `You are an exceptionally skilled software development assistant, deeply experienced in designing optimal directory structures for projects. Your expertise in various languages, frameworks, and tooling is unparalleled, and you consistently produce clear, organized, and maintainable layouts.
-                  Now, given the following project information, generate only a comma-separated list of file and directory paths enclosed in curly braces, with no additional commentary, explanation, or formatting. The response must be exactly in the format:
-                  { path/to/file1.ext, path/to/dir/file2.ext, ... }
-                  and EXPLAIN how these example structures (given below) helped you in making the directory structure.
+                  Now, given the following project information, generate only a comma-separated list of file and directory paths enclosed in curly braces, with an additional comment for each file depicting what it is for ***IN ONE LINE*** in the format given. The response must be exactly in the format:
+                  {"path/to/file1.ext": "comment_for_file1", "path/to/dir/file2.ext": "comment_for_file2", ... }
+                  and EXPLAIN how these example structures which show user's uniqueness (given below as "User’s Unique Directory Making") helped you in making the directory structure.
                   Project Details:
                   - Project Name: ${PROJECT_NAME}
                   - Tech Stack: ${TECH_STACK}

@@ -1,7 +1,7 @@
-const fs = require('fs');
+import { readFileSync } from "fs";
 
 function getAccessToken() {
-  const data = fs.readFileSync('ghostdev/access_token.txt');
+  const data = readFileSync('../ghostdev/access_token.txt');
   return data.toString();
 }
 

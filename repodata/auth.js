@@ -1,9 +1,9 @@
 const getCodeUrl = "https://github.com/login/device/code"
 const getTokenUrl = "https://github.com/login/oauth/access_token"
 
-const fs = require('fs');
+import { readFileSync, writeFileSync } from 'fs';
 function getClientId() {
-  const data = fs.readFileSync('ghostdev/client_id.txt');
+  const data = readFileSync('../ghostdev/client_id.txt');
   return data.toString();
 }
 
@@ -71,7 +71,7 @@ async function pollForToken(client_id, device_code, interval = 5, expires_in = 9
                 console.log("Access token received!");
                 console.log(result);
 
-                fs.writeFileSync("ghostdev/access_token.txt", result.access_token);
+                writeFileSync("../ghostdev/access_token.txt", result.access_token);
                 return;
             } else if (result.error === "authorization_pending"){
                 setTimeout(poll, interval*1000);
