@@ -2,6 +2,7 @@ import os
 from git import Repo
 #from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+
 cwd = os.getcwd()
 
 repo_path = cwd
