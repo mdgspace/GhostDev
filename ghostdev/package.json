@@ -13,10 +13,7 @@
   "main": "./extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "ghostdev.helloWorld",
-        "title": "Hello World"
-      }
+      
     ]
   },
   "scripts": {

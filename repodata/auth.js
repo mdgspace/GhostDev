@@ -25,8 +25,9 @@ async function getCode(){
             //console.log(result)
             const device_code = result.device_code;
             const user_code = result.user_code;
-            console.log("Go to this site: https://github.com/login/device/ and enter the code:",user_code); 
-            pollForToken(client_id, device_code, result.interval, result.expires_in)
+            return user_code
+           // console.log("Go to this site: https://github.com/login/device/ and enter the code:",user_code); 
+           // pollForToken(client_id, device_code, result.interval, result.expires_in)
         } else {
             const errorData = response.json();
             console.error("error:", errorData);
@@ -86,4 +87,4 @@ async function pollForToken(client_id, device_code, interval = 5, expires_in = 9
     poll();
 }
 
-getCode();
+export { getCode };
