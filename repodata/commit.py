@@ -9,4 +9,3 @@ repo = Repo(repo_path)
 diff_cached = repo.git.diff("--cached")
 print(diff_cached)
 
-print("hello")
