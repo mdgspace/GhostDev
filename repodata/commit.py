@@ -11,3 +11,5 @@ diff_cached = repo.index.diff("HEAD")
 for diff in diff_cached:
     print(f"Staged change in: {diff.a_path}")
     print(diff.diff.decode())
+
+print("hello")
