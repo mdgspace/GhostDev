@@ -39,14 +39,15 @@
 // 1. Consider best practices for ${TECH_STACK} and the features listed.
 // 2. Reflect the unique aspect ${SPECIFIC_DIFFERENTIATIO} in the structure.
 // 3. Produce only the list of paths as comma-separated values in curly braces.`
+require('dotenv').config();
 const TECH_STACK = "MERN stack, with mongo atlas"
+const key = process.env.LLMAPI
 async function prompting(){
     try {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
-            // "Authorization": "Bearer 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",
-            "Authorization": "Bearer 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",
+            "Authorization": `Bearer ${key}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({

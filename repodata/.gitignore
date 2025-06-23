@@ -3,3 +3,4 @@ package-lock.json
 package.json
 redis.txt
 api_key.txt
+.env

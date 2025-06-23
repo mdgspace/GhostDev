@@ -2,9 +2,8 @@
 //       const data = fs.readFileSync('ghostdev/access_token.txt');
 //       return data.toString();
 //     }
-
-// const accessToken = getAccessToken()
-
+// 
+//// const accessToken = getAccessToken()
 // const response = await fetch(`https://api.github.com/user`, {
 //       headers: {
 //         'Authorization': `Bearer ${accessToken}`,
@@ -15,7 +14,7 @@
 
 
 //     const fs = require('fs');
-
+  
     
 //     function getUsername() {
 //       const data = fs.readFileSync('ghostdev/username.txt');
@@ -23,7 +22,7 @@
 //     }
     
 //     const username = getUsername()
-//     // const accessToken = getAccessToken()
+//    
     
     
 //     const headers={

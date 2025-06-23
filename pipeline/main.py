@@ -1,9 +1,11 @@
 import json
 import requests as api
 from settings import Settings
+import redis
+settings = Settings()  
 
-settings = Settings()        
-
+r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+gitdiff = r.get('gitdiff')
 def exctract_code_from_selected_files(selected_files):
     file_to_code_mapping = {}
     for file in selected_files:
