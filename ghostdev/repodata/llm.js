@@ -3,9 +3,17 @@
 import {directory_analysis} from '../repodata/dir_llm.js'
 
 import {readFileSync} from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+// For __dirname equivalent in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function getapikey() {
-  const data = readFileSync('api_key.txt');
+  const Path = path.join(__dirname, '../keys', 'api_key.txt');
+  const data = readFileSync(Path);
   return data.toString();
 }
 

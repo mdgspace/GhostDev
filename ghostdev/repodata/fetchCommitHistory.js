@@ -1,19 +1,30 @@
 //sample array of repos selected by user (coming from frontend)
 const arr = [ "People_status"]
 
-import { readFileSync } from 'fs';
+import { readFileSync } from "fs";
 
-function getAccessToken() {
-  const data = readFileSync('./ghostdev/access_token.txt');
-  return data.toString();
-}
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+// For __dirname equivalent in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function getUsername() {
-  const data = readFileSync('./ghostdev/username.txt');
-  return data.toString();
+  const Path = path.join(__dirname, '../keys', 'username.txt');
+  const data = readFileSync(Path);
+  return data.toString().trim();
 }
 
 const username = getUsername()
+
+function getAccessToken() {
+  const Path = path.join(__dirname, '../keys', 'access_token.txt');
+  const data = readFileSync(Path);
+  return data.toString();
+}
+
 const accessToken = getAccessToken()
 const branch = 'main'
 

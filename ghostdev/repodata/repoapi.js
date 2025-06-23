@@ -1,7 +1,13 @@
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function getAccessToken() {
-  const data = readFileSync('../ghostdev/access_token.txt');
+  const Path = path.join(__dirname, '../keys', 'access_token.txt');
+  const data = readFileSync(Path);
   return data.toString();
 }
 
@@ -30,7 +36,8 @@ async function fetchRepositories() {
     const data = await response.json();
 
     if(data.length != 0){
-      fs.writeFileSync("ghostdev/username.txt", data[0].owner.login);
+      const Path = path.join(__dirname, '../keys', 'username.txt');
+      writeFileSync(Path, data[0].owner.login);
     }
     if (data.length === 0) { 
       break;

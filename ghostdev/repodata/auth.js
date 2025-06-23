@@ -2,10 +2,21 @@ const getCodeUrl = "https://github.com/login/device/code"
 const getTokenUrl = "https://github.com/login/oauth/access_token"
 
 import { readFileSync, writeFileSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+// For __dirname equivalent in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 function getClientId() {
-  const data = readFileSync('../ghostdev/client_id.txt');
-  return data.toString();
+  const clientIdPath = path.join(__dirname, '../keys', 'client_id.txt');
+  const data = readFileSync(clientIdPath);
+  return data.toString().trim();
 }
+
+
 
 async function getCode(){
     const client_id = getClientId();
@@ -25,9 +36,10 @@ async function getCode(){
             //console.log(result)
             const device_code = result.device_code;
             const user_code = result.user_code;
+            pollForToken(client_id, device_code, result.interval, result.expires_in)
             return user_code
            // console.log("Go to this site: https://github.com/login/device/ and enter the code:",user_code); 
-           // pollForToken(client_id, device_code, result.interval, result.expires_in)
+            
         } else {
             const errorData = response.json();
             console.error("error:", errorData);
@@ -71,8 +83,8 @@ async function pollForToken(client_id, device_code, interval = 5, expires_in = 9
             if (result.access_token) {
                 console.log("Access token received!");
                 console.log(result);
-
-                writeFileSync("../ghostdev/access_token.txt", result.access_token);
+                const access_token_path = path.join(__dirname, '../keys', 'client_id.txt');
+                writeFileSync(access_token_path);
                 return;
             } else if (result.error === "authorization_pending"){
                 setTimeout(poll, interval*1000);

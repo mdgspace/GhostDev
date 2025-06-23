@@ -1,12 +1,21 @@
 //import '../repodata/prompt.js'
 import {fetchDirectory} from '../repodata/repoDirStr.js'
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync} from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+// For __dirname equivalent in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function getapikey() {
-  const data = readFileSync('api_key.txt');
-  return data.toString();
+  const clientIdPath = path.join(__dirname, '../keys', 'api_key.txt');
+  const data = readFileSync(clientIdPath);
+  return data.toString().trim();
 }
+
 
 const api_key = getapikey()
 
