@@ -1,7 +1,7 @@
 // function getapi const response = fetch("https://openrouter.ai/api/v1/chat/completions", {
 //   method: "POST",
 //   headers: {
-//     "Authorization": "Bearer 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>",
+//     "Authorization": "Bearer ",
 //     "Content-Type": "application/json"
 //   },
 //   body: JSON.stringify({
