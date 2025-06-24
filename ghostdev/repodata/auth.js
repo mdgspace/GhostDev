@@ -83,9 +83,10 @@ async function pollForToken(client_id, device_code, interval = 5, expires_in = 9
             if (result.access_token) {
                 console.log("Access token received!");
                 console.log(result);
-                const access_token_path = path.join(__dirname, '../keys', 'client_id.txt');
-                writeFileSync(access_token_path);
+                const access_token_path = path.join(__dirname, '../keys', 'access_token.txt');
+                writeFileSync(access_token_path, result.access_token);
                 return;
+
             } else if (result.error === "authorization_pending"){
                 setTimeout(poll, interval*1000);
             } else {
