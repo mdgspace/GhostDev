@@ -11,7 +11,7 @@
     "Other"
   ],
   "activationEvents": [],
-  "main": "./extension.cjs",
+  "main": "./src/extension.cjs",
   "contributes": {
     "commands": [
       {
