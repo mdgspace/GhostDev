@@ -1,5 +1,5 @@
 //import '../repodata/prompt.js'
-import {fetchDirectory} from '../repodata/repoDirStr.js'
+import {fetchDirectory} from './selected_repo_dirStr.js'
 
 import { readFileSync} from 'fs';
 import path from 'path';
@@ -20,9 +20,9 @@ function getapikey() {
 const api_key = getapikey()
 
 
-async function directory_analysis(){
+async function directory_analysis(selected_repos){
     try {
-        const EXAMPLE_STRUCTURES = await fetchDirectory()
+        const EXAMPLE_STRUCTURES = await fetchDirectory(selected_repos)
         //console.log(EXAMPLE_STRUCTURES)
         const formattedStructures = EXAMPLE_STRUCTURES.map(repo => {
             return `Repository: ${repo.repository}

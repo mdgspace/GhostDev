@@ -1,4 +1,6 @@
-function getWebviewContent() {
+function getWebviewContent(repos = []) {
+  const options = repos.map(repo => `<option value="${repo}">${repo}</option>`).join('');
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -11,25 +13,10 @@ function getWebviewContent() {
       color: #d4d4d4;
       padding: 20px;
     }
-
-    h1 {
-      color: #ffffff;
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-      color: #9cdcfe;
-    }
-
-    input[type="text"] {
+    h1 { color: #ffffff; text-align: center; margin-bottom: 30px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: bold; color: #9cdcfe; }
+    input[type="text"], select {
       width: 100%;
       padding: 10px;
       background-color: #2d2d2d;
@@ -37,12 +24,10 @@ function getWebviewContent() {
       border: 1px solid #3c3c3c;
       border-radius: 5px;
     }
-
-    input[type="text"]:focus {
-      outline: none;
-      border-color: #007acc;
+    select[multiple] {
+      height: 120px;
     }
-
+    input:focus, select:focus { outline: none; border-color: #007acc; }
     button {
       background-color: #007acc;
       color: white;
@@ -54,15 +39,8 @@ function getWebviewContent() {
       display: block;
       margin: 30px auto 0;
     }
-
-    button:hover {
-      background-color: #005f9e;
-    }
-
-    .container {
-      max-width: 500px;
-      margin: auto;
-    }
+    button:hover { background-color: #005f9e; }
+    .container { max-width: 500px; margin: auto; }
   </style>
 </head>
 <body>
@@ -99,6 +77,13 @@ function getWebviewContent() {
       <input type="text" id="unique" placeholder="e.g., AI-powered search">
     </div>
 
+    <div class="form-group">
+      <label for="existingRepos">Select Existing Repos (optional)</label>
+      <select id="existingRepos" multiple>
+        ${options}
+      </select>
+    </div>
+
     <button onclick="submitDetail()">Submit</button>
   </div>
 
@@ -113,6 +98,9 @@ function getWebviewContent() {
       const db = document.getElementById('database').value;
       const unique = document.getElementById('unique').value;
 
+      const selectedOptions = Array.from(document.getElementById('existingRepos').selectedOptions);
+      const selectedRepos = selectedOptions.map(option => option.value);
+
       vscode.postMessage({
         type: 'formSubmission',
         payload: {
@@ -121,7 +109,8 @@ function getWebviewContent() {
           techS,
           auth,
           db,
-          unique
+          unique,
+          selectedRepos
         }
       });
     }

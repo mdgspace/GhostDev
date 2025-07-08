@@ -25,9 +25,9 @@ function getAccessToken() {
 
 const accessToken = getAccessToken()
 
-const client = redis.createClient({
-  url: 'redis://localhost:6379/0'  // No password
-});
+//const client = redis.createClient({
+//  url: 'redis://localhost:6379/0'  // No password
+//});
 
 async function getCodeFromFile(repo, path) {
     try{

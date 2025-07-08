@@ -14,7 +14,7 @@ function getAccessToken() {
 const accessToken = getAccessToken()
 
 
-async function fetchRepositories() {
+async function fetchAllRepositories() {
   let page = 1;
   const perPage = 100;
   let repositoryNames = [];
@@ -50,6 +50,7 @@ async function fetchRepositories() {
   }
 
   console.log('Repositories:', repositoryNames);
+  return repositoryNames
 }
 
-fetchRepositories();
+export {fetchAllRepositories};

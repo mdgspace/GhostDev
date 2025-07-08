@@ -1,9 +1,13 @@
 const vscode = require('vscode');
 const redis = require('redis');
 const { getWebviewContent } = require('../webviews/newRepoWebView.cjs');
+const { fetchAllRepositories } = require('../../repodata/get_all_repo.js'); 
+const { prompting } = require('../../repodata/llm_gen_dir.js');
 
 async function registerNewRepoCommand(context) {
-  const disposable = vscode.commands.registerCommand('ghostdev.newRepo', function () {
+  const disposable = vscode.commands.registerCommand('ghostdev.newRepo', async function () {
+    const repos = await fetchAllRepositories(); // Array of repo names
+
     const panel = vscode.window.createWebviewPanel(
       'repoName',
       'Create New Repo',
@@ -11,14 +15,14 @@ async function registerNewRepoCommand(context) {
       { enableScripts: true }
     );
 
-    panel.webview.html = getWebviewContent();
+    panel.webview.html = getWebviewContent(repos); // pass repos to HTML builder
 
     panel.webview.onDidReceiveMessage(
       async message => {
         if (message.type === 'formSubmission') {
-          const { name } = message.payload;
-          vscode.window.showInformationMessage(`Form submitted for Repo: ${name}`);
-          await saveToRedis(message);
+          const { name, selectedRepos } = message.payload;
+          vscode.window.showInformationMessage(`New repo: ${name}, Selected: ${selectedRepos.join(', ')}`);
+          await saveToRedis(message, selectedRepos);
         } else {
           vscode.window.showWarningMessage('Unknown message received.');
         }
@@ -31,7 +35,8 @@ async function registerNewRepoCommand(context) {
   context.subscriptions.push(disposable);
 }
 
-async function saveToRedis(message) {
+
+async function saveToRedis(message, selectedRepos) {
   const client = redis.createClient({ url: 'redis://localhost:6379' });
 
   try {
@@ -40,6 +45,11 @@ async function saveToRedis(message) {
     await client.set('newRepoData', payload);
     const data = await client.get('newRepoData');
     console.log('[Redis] Stored and fetched:', data);
+    
+    //get suggested directory
+    const result = await prompting(client, selectedRepos);
+    console.log(result)
+
   } catch (err) {
     console.error('[Redis] Error:', err.message);
     vscode.window.showErrorMessage(`Redis error: ${err.message}`);

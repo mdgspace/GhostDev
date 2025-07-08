@@ -1,10 +1,10 @@
 //sample array of repos selected by user (coming from frontend)
-const arr = [ "Calendarjs"]
+//const arr = [ "Calendarjs"]
 
 import { readFileSync } from "fs";
 import path from 'path';
 import { fileURLToPath } from 'url';
-
+import { fetchAllRepositories  } from "./get_all_repo.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,16 +32,16 @@ const headers={
     'X-GitHub-Api-Version': '2022-11-28',
 }
 
-async function fetchDirectory() {
+async function fetchDirectory(selected_repos) {
   var allRepoData = [];
-  for(var i=0; i<arr.length ; i++){
-    const response = await fetch(`https://api.github.com/repos/${username}/${arr[i]}/branches/main`, {
+  for(var i=0; i<selected_repos.length ; i++){
+    const response = await fetch(`https://api.github.com/repos/${username}/${selected_repos[i]}/branches/main`, {
       headers: headers
     })
     const data = await response.json()
     const treeSHA = data.commit.commit.tree.sha;
 
-    const treeRes = await fetch(`https://api.github.com/repos/${username}/${arr[i]}/git/trees/${treeSHA}?recursive=1`, { headers });
+    const treeRes = await fetch(`https://api.github.com/repos/${username}/${selected_repos[i]}/git/trees/${treeSHA}?recursive=1`, { headers });
     const treeData = await treeRes.json();
     var folders = [];
     var files = [];
@@ -54,7 +54,7 @@ async function fetchDirectory() {
       }
     })
     allRepoData.push({
-        repository: arr[i],
+        repository: selected_repos[i],
         folders: folders,
         files: files
     });

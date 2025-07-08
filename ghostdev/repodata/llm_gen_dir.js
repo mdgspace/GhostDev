@@ -1,6 +1,6 @@
 //import '../repodata/prompt.js'
 //import {fetchDirectory} from '../repodata/repoDirStr.js'
-import {directory_analysis} from '../repodata/dir_llm.js'
+import {directory_analysis} from './dir_analysis_llm.js'
 
 import {readFileSync} from 'fs';
 import path from 'path';
@@ -19,16 +19,16 @@ function getapikey() {
 
 const api_key = getapikey()
 
-
-async function prompting(){
+async function prompting(client, selected_repos){
+  const data = await client.get('newRepoData');
     try {
-        const PROJECT_NAME = "PizzaGo"
-        const TECH_STACK = "backend: Expressjs, frontend: React, database: dbsqlite"
-        const DESCRIPTION = "It is a pizza ordering website. It has all basic things like auth, backend frontend connection through api calls. Users can choose from a wide variety of pizzas, and can order them."
-        const DATABASE = "dbsqlite"
-        const AUTHENTICATION = "yes-jwt"
-        const SPECIFIC_DIFFERENTIATION = "nothing specific"
-        const USER_ANALYSIS = await directory_analysis()
+        const PROJECT_NAME = data.name
+        const TECH_STACK = data.techS
+        const DESCRIPTION = data.desc
+        const DATABASE = data.db
+        const AUTHENTICATION = data.auth
+        const SPECIFIC_DIFFERENTIATION = data.unique
+        const USER_ANALYSIS = await directory_analysis(selected_repos)
         console.log(USER_ANALYSIS)
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -68,11 +68,14 @@ async function prompting(){
         })
         });
 
-        const data = await response.json();
-        console.log(data.choices[0].message.content)
+        const result = await response.json();
+        console.log(result.choices[0].message.content)
+        const llm_response = result.choices[0].message.content
+        return (llm_response)
     } catch (error) {
         console.log(error)
+        return (error)
     }
 }
 
-prompting();
+export {prompting};
