@@ -10,7 +10,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": ["*"],
   "main": "./src/extension.cjs",
   "contributes": {
     "commands": [
@@ -21,6 +21,10 @@
       {
         "command": "ghostdev.newRepo",
         "title": "NEW REPO"
+      },
+      {
+        "command": "ghostdev.logout",
+        "title": "LOGOUT"
       }
     ]
   },
