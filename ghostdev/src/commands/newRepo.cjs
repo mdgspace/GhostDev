@@ -3,6 +3,7 @@ const redis = require('redis');
 const { getWebviewContent } = require('../webviews/newRepoWebView.cjs');
 const { fetchAllRepositories } = require('../../repodata/get_all_repo.js'); 
 const { prompting } = require('../../repodata/llm_gen_dir.js');
+const {generateStructure} = require('../utils/createDirStruct.cjs')
 
 async function registerNewRepoCommand(context) {
   const disposable = vscode.commands.registerCommand('ghostdev.newRepo', async function () {
@@ -49,6 +50,16 @@ async function saveToRedis(message, selectedRepos) {
     //get suggested directory
     const result = await prompting(client, selectedRepos);
     console.log(result)
+
+   // const folder = await vscode.window.showOpenDialog({
+   //   canSelectFolders: true,
+   //   openLabel: 'Select folder to generate project',
+   // });
+//
+   // if (folder && folder[0]) {
+   //   const basePath = folder[0].fsPath;
+   //   await generateStructure(basePath, result);
+   // }
 
   } catch (err) {
     console.error('[Redis] Error:', err.message);
