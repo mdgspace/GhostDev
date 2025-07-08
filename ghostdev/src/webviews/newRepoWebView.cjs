@@ -1,5 +1,10 @@
 function getWebviewContent(repos = []) {
-  const options = repos.map(repo => `<option value="${repo}">${repo}</option>`).join('');
+  const checkboxes = repos.map(repo => `
+    <label class="checkbox-option">
+      <input type="checkbox" name="repoOption" value="${repo}">
+      ${repo}
+    </label>
+  `).join('');
 
   return `
 <!DOCTYPE html>
@@ -13,10 +18,25 @@ function getWebviewContent(repos = []) {
       color: #d4d4d4;
       padding: 20px;
     }
-    h1 { color: #ffffff; text-align: center; margin-bottom: 30px; }
-    .form-group { margin-bottom: 20px; }
-    label { display: block; margin-bottom: 8px; font-weight: bold; color: #9cdcfe; }
-    input[type="text"], select {
+
+    h1 {
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #9cdcfe;
+    }
+
+    input[type="text"] {
       width: 100%;
       padding: 10px;
       background-color: #2d2d2d;
@@ -24,10 +44,37 @@ function getWebviewContent(repos = []) {
       border: 1px solid #3c3c3c;
       border-radius: 5px;
     }
-    select[multiple] {
-      height: 120px;
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #007acc;
     }
-    input:focus, select:focus { outline: none; border-color: #007acc; }
+
+    .checkbox-group {
+      background-color: #2d2d2d;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #3c3c3c;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .checkbox-option {
+      display: block;
+      padding: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #d4d4d4;
+    }
+
+    .checkbox-option:hover {
+      background-color: #3a3a3a;
+    }
+
+    .checkbox-option input {
+      margin-right: 10px;
+    }
+
     button {
       background-color: #007acc;
       color: white;
@@ -39,8 +86,15 @@ function getWebviewContent(repos = []) {
       display: block;
       margin: 30px auto 0;
     }
-    button:hover { background-color: #005f9e; }
-    .container { max-width: 500px; margin: auto; }
+
+    button:hover {
+      background-color: #005f9e;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+    }
   </style>
 </head>
 <body>
@@ -78,10 +132,10 @@ function getWebviewContent(repos = []) {
     </div>
 
     <div class="form-group">
-      <label for="existingRepos">Select Existing Repos (optional)</label>
-      <select id="existingRepos" multiple>
-        ${options}
-      </select>
+      <label>Select Existing Repos (optional)</label>
+      <div class="checkbox-group" id="repoCheckboxes">
+        ${checkboxes || '<span style="color: #888;">No repositories found.</span>'}
+      </div>
     </div>
 
     <button onclick="submitDetail()">Submit</button>
@@ -98,8 +152,8 @@ function getWebviewContent(repos = []) {
       const db = document.getElementById('database').value;
       const unique = document.getElementById('unique').value;
 
-      const selectedOptions = Array.from(document.getElementById('existingRepos').selectedOptions);
-      const selectedRepos = selectedOptions.map(option => option.value);
+      const checkboxes = document.querySelectorAll('input[name="repoOption"]:checked');
+      const selectedRepos = Array.from(checkboxes).map(cb => cb.value);
 
       vscode.postMessage({
         type: 'formSubmission',
