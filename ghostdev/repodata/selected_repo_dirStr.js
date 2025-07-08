@@ -4,7 +4,7 @@
 import { readFileSync } from "fs";
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { fetchAllRepositories  } from "./get_all_repo.js";
+//import { fetchAllRepositories  } from "./get_all_repo.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,7 +59,8 @@ async function fetchDirectory(selected_repos) {
         files: files
     });
   };
-    return allRepoData
+  console.log(allRepoData)
+  return allRepoData
 }
 
 
