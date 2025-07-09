@@ -50,16 +50,18 @@ async function saveToRedis(message, selectedRepos) {
     //get suggested directory
     const result = await prompting(client, selectedRepos);
     console.log(result)
+    const dirStr = JSON.parse(result);
+    
 
-   // const folder = await vscode.window.showOpenDialog({
-   //   canSelectFolders: true,
-   //   openLabel: 'Select folder to generate project',
-   // });
-//
-   // if (folder && folder[0]) {
-   //   const basePath = folder[0].fsPath;
-   //   await generateStructure(basePath, result);
-   // }
+    const folder = await vscode.window.showOpenDialog({
+      canSelectFolders: true,
+      openLabel: 'Select folder to generate project',
+    });
+
+    if (folder && folder[0]) {
+      const basePath = folder[0].fsPath;
+      await generateStructure(basePath, dirStr);
+    }
 
   } catch (err) {
     console.error('[Redis] Error:', err.message);
