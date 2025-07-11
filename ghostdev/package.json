@@ -25,6 +25,10 @@
       {
         "command": "ghostdev.logout",
         "title": "LOGOUT"
+      },
+      {
+        "command": "ghostdev.suggestCommit",
+        "title": "COMMIT"
       }
     ]
   },

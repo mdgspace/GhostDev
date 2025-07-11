@@ -3,12 +3,14 @@ const path = require('path');
 const { registerAuthCommand } = require('./commands/auth.cjs');
 const { registerNewRepoCommand } = require('./commands/newRepo.cjs');
 const { logout } = require('./commands/logout.cjs');
+const { registerSuggestCommitCommand } = require('./commands/suggest_commit_cmd.cjs'); 
 
 async function activate(context) {
   console.log('Extension "ghostdev" is now active!');
   registerAuthCommand(context);
   registerNewRepoCommand(context);
   logout(context);
+  registerSuggestCommitCommand(context);
 
   const isAuthed = context.globalState.get('isAuthed', false);
 
@@ -41,22 +43,16 @@ async function activate(context) {
       vscode.commands.executeCommand('ghostdev.newRepo');
     }
 
-    // Automatically suggest commit after Git add
     const suggest = await vscode.window.showInformationMessage(
       'Would you like help writing your next Git commit message?',
       'Suggest Now', 'Skip'
     );
     if (suggest === 'Suggest Now') {
-      runPythonCommitSuggester();
+      //const suggestedCommit = `git commit -m ${commit}`; // replace with real LLM output
+      //runSmartCommitPython(suggestedCommit);
+      await vscode.commands.executeCommand('ghostdev.suggestCommit');
     }
   }
-}
-
-function runPythonCommitSuggester() {
-  const pythonScriptPath = path.join(__dirname, 'scripts', 'suggest_commit.py');
-  const terminal = vscode.window.createTerminal('GhostDev Commit Suggester');
-  terminal.sendText(`python3 "${pythonScriptPath}"`);
-  terminal.show();
 }
 
 function deactivate() {}
