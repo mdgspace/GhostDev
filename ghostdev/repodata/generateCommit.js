@@ -1,5 +1,7 @@
 import redis from 'redis';
-import fetch from 'node-fetch';
+import path from 'path';
+import { readFileSync } from 'fs';
+//import fetch from 'node-fetch';
 import { fetchCommitHistory } from './fetchCommitHistory.js';
 
 const client = redis.createClient({
@@ -25,6 +27,7 @@ if (!gitDiff) {
 
 const pastCommits = await fetchCommitHistory();
 
+async function suggestCommitLLM(){
   const messages = [
     {
       role: 'system',
@@ -36,35 +39,38 @@ const pastCommits = await fetchCommitHistory();
       NOTE THAT: ONLY GIVE THE COMMIT MESSAGE IN ONE LINE, NO OTHER COMMENTARY NEEDED`,
     },
   ];
-try{
+
+  try{
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          "model": "deepseek/deepseek-r1:free",
-          "messages": messages
-          })
-        });
-
-        const data = await res.json();
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        "model": "deepseek/deepseek-r1:free",
+        "messages": messages
+        })
+      });
+      const data = await res.json();
+      
+      if (data.choices && data.choices.length > 0) {
         
-        if (data.choices && data.choices.length > 0) {
-          
-        console.log(data.choices[0].message.content);
-        const llm_response = data.choices[0].message.content;
-        return(llm_response)
-          
-        } else {
-          console.error('No response from LLM:', data);
-        }
+      console.log(data.choices[0].message.content);
+      const llm_response = data.choices[0].message.content;
+      await client.disconnect();
+      return(llm_response)
         
+      } else {
+        console.error('No response from LLM:', data);
         await client.disconnect();
-}catch(error){
-    console.log(error)
-        return (error)
-}
+        return "";
+      }
+      
+  } catch(error){
+      console.log(error)
+      return (error)
+  }
+};
 
-
+export {suggestCommitLLM};

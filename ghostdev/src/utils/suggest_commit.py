@@ -5,7 +5,7 @@ import sys
 import os
 
 # Get the suggested commit message from command-line argument
-suggested = sys.argv[1] if len(sys.argv) > 1 else 'git commit -m "Initial commit"'
+suggested = 'git commit -m ' + (sys.argv[1] if len(sys.argv) > 1 else 'git commit -m "Initial commit"')
 
 class SimpleAutoSuggest(AutoSuggest):
     def get_suggestion(self, buffer, document: Document):

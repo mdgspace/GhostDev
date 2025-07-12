@@ -10,7 +10,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": ["*"],
+  "activationEvents": [],
   "main": "./src/extension.cjs",
   "contributes": {
     "commands": [
@@ -25,10 +25,6 @@
       {
         "command": "ghostdev.logout",
         "title": "LOGOUT"
-      },
-      {
-        "command": "ghostdev.suggestCommit",
-        "title": "COMMIT"
       }
     ]
   },
