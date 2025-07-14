@@ -4,43 +4,43 @@ import { readFileSync } from 'fs';
 //import fetch from 'node-fetch';
 import { fetchCommitHistory } from './fetchCommitHistory.js';
 
-const client = redis.createClient({
-  host: 'localhost',
-  port: 6379
-});
-await client.connect();
-
 function getApiKey() {
   const Path = path.join(__dirname, '../keys', 'api_key.txt');
   const data = readFileSync(Path);
   return data.toString();
 }
 
-const API_KEY = getApiKey(); 
-
-const gitDiff = await client.get('gitdiff');
-
-if (!gitDiff) {
-  console.error('No staged git diff found in Redis under key "gitdiff". Make sure it is populated.');
-  process.exit(1);
-}
-
-const pastCommits = await fetchCommitHistory();
-
 async function suggestCommitLLM(){
-  const messages = [
-    {
-      role: 'system',
-      content: 'You are a helpful assistant that generates git commit messages in the same style as the user’s past commit history.',
-    },
-    {
-      role: 'user',
-      content: `These are some of my previous commit messages:\n\n${pastCommits}\n\nAnd this is my current staged git diff:\n\n${gitDiff}\n\nSuggest a new commit message in a similar style. 
-      NOTE THAT: ONLY GIVE THE COMMIT MESSAGE IN ONE LINE, NO OTHER COMMENTARY NEEDED`,
-    },
-  ];
+  const client = redis.createClient({
+    host: 'localhost',
+    port: 6379
+  });
+  
+  try {
+    await client.connect();
+    
+    const API_KEY = getApiKey(); 
+    const gitDiff = await client.get('gitdiff');
 
-  try{
+    if (!gitDiff) {
+      console.error('No staged git diff found in Redis under key "gitdiff". Make sure it is populated.');
+      return "No git diff available";
+    }
+
+    const pastCommits = await fetchCommitHistory();
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a helpful assistant that generates git commit messages in the same style as the user\'s past commit history.',
+      },
+      {
+        role: 'user',
+        content: `These are some of my previous commit messages:\n\n${pastCommits}\n\nAnd this is my current staged git diff:\n\n${gitDiff}\n\nSuggest a new commit message in a similar style. 
+        NOTE THAT: ONLY GIVE THE COMMIT MESSAGE IN ONE LINE, NO OTHER COMMENTARY NEEDED`,
+      },
+    ];
+
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -69,6 +69,13 @@ async function suggestCommitLLM(){
       
   } catch(error){
       console.log(error)
+      if (client) {
+        try {
+          await client.disconnect();
+        } catch (disconnectError) {
+          console.error('Error disconnecting from Redis:', disconnectError);
+        }
+      }
       return (error)
   }
 };

@@ -16,12 +16,9 @@ function getapikey() {
   return data.toString().trim();
 }
 
-
-const api_key = getapikey()
-
-
 async function directory_analysis(selected_repos){
     try {
+        const api_key = getapikey()
         const EXAMPLE_STRUCTURES = await fetchDirectory(selected_repos)
         //console.log(EXAMPLE_STRUCTURES)
         const formattedStructures = EXAMPLE_STRUCTURES.map(repo => {
@@ -69,9 +66,9 @@ async function directory_analysis(selected_repos){
         
     } catch (error) {
         console.log(error)
+        return "Error analyzing directory structure"
     }
     
 }
-directory_analysis();
 
 export {directory_analysis};

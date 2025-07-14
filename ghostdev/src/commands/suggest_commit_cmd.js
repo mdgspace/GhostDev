@@ -1,9 +1,7 @@
 // commands/suggestCommit.cjs
 import {suggestCommitLLM} from '../../repodata/generateCommit.js'
 import {runSmartCommitPython} from '../utils/run_py.cjs'
-//const { runSmartCommitPython } = require('../utils/run_py.cjs');
-//const {suggestCommitLLM} = require('../../repodata/generateCommit.js')
-//const {suggestCommitLLM} = require('../../repodata/generateCommit.js');
+
 import path from 'path'
 import vscode from 'vscode'
 
@@ -18,11 +16,11 @@ function runPyforGitDiff() {
 
 async function registerSuggestCommitCommand(context) {
 
-  runPyforGitDiff();
-
-  const suggestedCommit = await suggestCommitLLM();
-
   const disposable = vscode.commands.registerCommand('ghostdev.suggestCommit', async () => {
+    // Only run Git diff when command is executed
+    runPyforGitDiff();
+    
+    const suggestedCommit = await suggestCommitLLM();
     await runSmartCommitPython(suggestedCommit);
   });
 

@@ -15,52 +15,56 @@ function getUsername() {
   return data.toString().trim();
 }
 
-const username = getUsername()
-
 function getAccessToken() {
   const Path = path.join(__dirname, '../keys', 'access_token.txt');
   const data = readFileSync(Path);
   return data.toString();
 }
 
-const accessToken = getAccessToken()
-
-const headers={
-    'Authorization': `Bearer ${accessToken}`,
-    'Accept': 'application/vnd.github+json',
-    'User-Agent': 'Node.js Script',
-    'X-GitHub-Api-Version': '2022-11-28',
-}
-
 async function fetchDirectory(selected_repos) {
-  var allRepoData = [];
-  for(var i=0; i<selected_repos.length ; i++){
-    const response = await fetch(`https://api.github.com/repos/${username}/${selected_repos[i]}/branches/main`, {
-      headers: headers
-    })
-    const data = await response.json()
-    const treeSHA = data.commit.commit.tree.sha;
+  try {
+    const username = getUsername()
+    const accessToken = getAccessToken()
 
-    const treeRes = await fetch(`https://api.github.com/repos/${username}/${selected_repos[i]}/git/trees/${treeSHA}?recursive=1`, { headers });
-    const treeData = await treeRes.json();
-    var folders = [];
-    var files = [];
-    treeData.tree?.forEach(item => {
-      if (item.type === 'tree'){
-        folders.push(item.path);
-        //console.log(item.path)
-      } else {
-        files.push(item.path);
-      }
-    })
-    allRepoData.push({
-        repository: selected_repos[i],
-        folders: folders,
-        files: files
-    });
-  };
-  console.log(allRepoData)
-  return allRepoData
+    const headers={
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'Node.js Script',
+        'X-GitHub-Api-Version': '2022-11-28',
+    }
+
+    var allRepoData = [];
+    for(var i=0; i<selected_repos.length ; i++){
+      const response = await fetch(`https://api.github.com/repos/${username}/${selected_repos[i]}/branches/main`, {
+        headers: headers
+      })
+      const data = await response.json()
+      const treeSHA = data.commit.commit.tree.sha;
+
+      const treeRes = await fetch(`https://api.github.com/repos/${username}/${selected_repos[i]}/git/trees/${treeSHA}?recursive=1`, { headers });
+      const treeData = await treeRes.json();
+      var folders = [];
+      var files = [];
+      treeData.tree?.forEach(item => {
+        if (item.type === 'tree'){
+          folders.push(item.path);
+          //console.log(item.path)
+        } else {
+          files.push(item.path);
+        }
+      })
+      allRepoData.push({
+          repository: selected_repos[i],
+          folders: folders,
+          files: files
+      });
+    };
+    console.log(allRepoData)
+    return allRepoData
+  } catch (error) {
+    console.error('Error fetching directory:', error);
+    return [];
+  }
 }
 
 
