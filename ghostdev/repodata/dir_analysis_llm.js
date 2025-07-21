@@ -72,6 +72,6 @@ async function directory_analysis(selected_repos){
     }
     
 }
-directory_analysis();
+// directory_analysis();
 
 export {directory_analysis};
