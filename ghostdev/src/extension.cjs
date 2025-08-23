@@ -4,13 +4,14 @@ const { registerAuthCommand } = require('./commands/auth.cjs');
 const { registerNewRepoCommand } = require('./commands/newRepo.cjs');
 const { logout } = require('./commands/logout.cjs');
 //const { registerSuggestCommitCommand } = require('./commands/suggest_commit_cmd.js'); 
-
+const {registerSuggestCodeCommand} = require('./commands/suggestCode.cjs')
 async function activate(context) {
   console.log('Extension "ghostdev" is now active!');
   registerAuthCommand(context);
   registerNewRepoCommand(context);
   logout(context);
-  //registerSuggestCommitCommand(context);
+ // registerSuggestCommitCommand(context);
+  registerSuggestCodeCommand(context);
 
   const isAuthed = context.globalState.get('isAuthed', false);
 
@@ -48,10 +49,11 @@ async function activate(context) {
       'Suggest Now', 'Skip'
     );
     if (suggest === 'Suggest Now') {
-      //const suggestedCommit = `git commit -m ${commit}`; // replace with real LLM output
-      //runSmartCommitPython(suggestedCommit);
-      //await vscode.commands.executeCommand('ghostdev.suggestCommit');
-    }
+     // const suggestedCommit = `git commit -m ${commit}`;
+     // runSmartCommitPython(suggestedCommit);
+      await vscode.commands.executeCommand('ghostdev.suggestCommit');
+    };
+    //await vscode.commands.executeCommand('ghostdev.suggestCommit');
   }
 }
 
