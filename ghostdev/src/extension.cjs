@@ -3,6 +3,7 @@ const path = require('path');
 const { registerAuthCommand } = require('./commands/auth.cjs');
 const { registerNewRepoCommand } = require('./commands/newRepo.cjs');
 const { logout } = require('./commands/logout.cjs');
+const { createStatusBarButton, runGetSuggestion } = require('./commands/activation_button.cjs')
 //const { registerSuggestCommitCommand } = require('./commands/suggest_commit_cmd.js'); 
 
 async function activate(context) {
@@ -10,17 +11,16 @@ async function activate(context) {
   registerAuthCommand(context);
   registerNewRepoCommand(context);
   logout(context);
+  runGetSuggestion(context);
   //registerSuggestCommitCommand(context);
 
   const isAuthed = context.globalState.get('isAuthed', false);
-
-  if (!isAuthed) {
-    const connect = await vscode.window.showInformationMessage(
+  const connect = await vscode.window.showInformationMessage(
       'Welcome to GhostDev! Connect your GitHub account to get started.',
       'Connect with GitHub'
     );
 
-    if (connect === 'Connect with GitHub') {
+  if (connect === 'Connect with GitHub') {
       await vscode.commands.executeCommand('ghostdev.auth');
       await context.globalState.update('isAuthed', true);
 
@@ -34,6 +34,22 @@ async function activate(context) {
         vscode.commands.executeCommand('ghostdev.newRepo');
       }
     }
+  if (!isAuthed) {
+    
+    // if (connect === 'Connect with GitHub') {
+    //   await vscode.commands.executeCommand('ghostdev.auth');
+    //   await context.globalState.update('isAuthed', true);
+
+    //   vscode.window.showInformationMessage('GitHub connected successfully 🎉');
+
+    //   const start = await vscode.window.showInformationMessage(
+    //     'Would you like to start a new project now?',
+    //     'Yes', 'Later'
+    //   );
+    //   if (start === 'Yes') {
+    //     vscode.commands.executeCommand('ghostdev.newRepo');
+    //   }
+    // }
   } else {
     const start = await vscode.window.showInformationMessage(
       'Start a new GhostDev project?',

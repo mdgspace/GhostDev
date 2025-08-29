@@ -72,7 +72,7 @@ async function prompting(client, selected_repos){
         const llm_response = result.choices[0].message.content
         return (llm_response)
     } catch (error) {
-        console.log(error)
+        console.log("llm_gen_dir me aaya", error)
         return (error)
     }
 }

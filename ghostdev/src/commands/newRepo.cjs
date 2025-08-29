@@ -7,6 +7,7 @@ const {generateStructure} = require('../utils/createDirStruct.cjs')
 
 async function registerNewRepoCommand(context) {
   const disposable = vscode.commands.registerCommand('ghostdev.newRepo', async function () {
+  console.log('ghostdev.newRepo command triggered');  // check if this logs
     const repos = await fetchAllRepositories(); // Array of repo names
 
     const panel = vscode.window.createWebviewPanel(

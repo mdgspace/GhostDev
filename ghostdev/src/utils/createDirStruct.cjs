@@ -24,6 +24,9 @@ async function generateStructure(basePath, structureJson) {
   }
 
   vscode.window.showInformationMessage('Project structure created successfully!');
+
+  //opening the folder
+  vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(basePath), false);//false for opening folder in same window
 }
 
 module.exports = { generateStructure };
