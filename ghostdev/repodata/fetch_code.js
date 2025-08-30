@@ -25,9 +25,9 @@ function getAccessToken() {
 
 const accessToken = getAccessToken()
 
-//const client = redis.createClient({
-//  url: 'redis://localhost:6379/0'  // No password
-//});
+const client = redis.createClient({
+ url: 'redis://localhost:6379/'  // No password
+});
 
 async function getCodeFromFile(repo, path) {
     try{
@@ -42,10 +42,10 @@ async function getCodeFromFile(repo, path) {
         if (response.ok){
             result = await response.json();
             console.log(result)
-            //(async () => {
-            //  await client.connect();
-            //  await client.set(path, response);
-            //})();
+            (async () => {
+             await client.connect();
+             await client.set(path, response);
+            })();
         } else {
             const errorData = response.json();
             console.error("error:", errorData);
@@ -55,5 +55,5 @@ async function getCodeFromFile(repo, path) {
     }
 }
 
-
+export {getCodeFromFile}
 

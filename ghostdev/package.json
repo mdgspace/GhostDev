@@ -1,6 +1,7 @@
 {
   "name": "ghostdev",
   "displayName": "ghostdev",
+  "publisher": "choizz",
   "description": "",
   "version": "0.0.1",
   "type": "module",
@@ -10,7 +11,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": ["*"],
+  "activationEvents": [
+    "*"
+  ],
   "main": "./src/extension.cjs",
   "contributes": {
     "commands": [
@@ -27,8 +30,8 @@
         "title": "LOGOUT"
       },
       {
-      "command": "ghostdev.runFunction",
-      "title": "Get Suggestions"
+        "command": "ghostdev.runFunction",
+        "title": "Get Suggestions"
       }
     ]
   },
@@ -46,6 +49,7 @@
     "eslint": "^9.25.1"
   },
   "dependencies": {
+    "child_process": "^1.0.2",
     "redis": "^5.5.6"
   }
 }
