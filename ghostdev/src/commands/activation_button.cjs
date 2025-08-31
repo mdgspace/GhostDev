@@ -1,3 +1,5 @@
+import { get_code_change_suggestion } from '../../repodata/suggest_changes';
+
 const vscode = require('vscode');
 const path = require("path");
 const { exec } = require("child_process");
@@ -36,6 +38,7 @@ function runGetSuggestion(context) {
       console.log(stdout);
 
       //call to llm for suggested code
+      get_code_change_suggestion(stdout);
 
     });
 
