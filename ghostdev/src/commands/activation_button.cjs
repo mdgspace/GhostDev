@@ -1,4 +1,4 @@
-import { get_code_change_suggestion } from '../../repodata/suggest_changes';
+// import { get_code_change_suggestion } from '../../repodata/suggest_changes';
 
 const vscode = require('vscode');
 const path = require("path");
@@ -38,7 +38,7 @@ function runGetSuggestion(context) {
       console.log(stdout);
 
       //call to llm for suggested code
-      get_code_change_suggestion(stdout);
+      // get_code_change_suggestion(stdout);
 
     });
 
