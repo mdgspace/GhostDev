@@ -1,0 +1,36 @@
+{
+    "name": "vsc-llm-code-suggester",
+    "displayName": "LLM Code Suggester",
+    "description": "A VSCode extension that uses an LLM to suggest better code based on your last commit.",
+    "version": "1.0.0",
+    "publisher": "YourName",
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onCommand:vsc-llm-code-suggester.suggestCode"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "vsc-llm-code-suggester.suggestCode",
+                "title": "Suggest Code (LLM)"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.80.0",
+        "@types/node": "^16.18.39",
+        "typescript": "^5.1.6"
+    }
+}
