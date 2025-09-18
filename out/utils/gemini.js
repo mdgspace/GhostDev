@@ -39,10 +39,7 @@ exports.callGemini = void 0;
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const dotenv = __importStar(require("dotenv"));
 const path = __importStar(require("path"));
-// Force dotenv to load from project root
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-console.log('Loaded GEMINI_API_KEY:', process.env.GEMINI_API_KEY);
-console.log('Current working directory:', process.cwd());
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 function callGemini(prompt) {
     return __awaiter(this, void 0, void 0, function* () {

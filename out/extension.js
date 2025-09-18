@@ -38,14 +38,13 @@ const gemini_1 = require("./utils/gemini");
 function activate(context) {
     function fetchVSCodeDescription() {
         return __awaiter(this, void 0, void 0, function* () {
-            vscode.window.showInformationMessage('GhostDev working');
+            vscode.window.showInformationMessage('GhostDev is haunting your code — watch it clean up your mess!');
             const prompt = 'What is Visual Studio Code?';
             try {
                 const description = yield (0, gemini_1.callGemini)(prompt);
                 vscode.window.showInformationMessage(description);
             }
             catch (error) {
-                console.error('Error fetching Gemini response:', error);
                 vscode.window.showErrorMessage('Failed to fetch Gemini response: ' + (error instanceof Error ? error.message : String(error)));
             }
         });
