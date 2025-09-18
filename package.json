@@ -1,0 +1,49 @@
+{
+  "name": "ghost-dev",
+  "displayName": "Ghost Dev",
+  "description": "Your AI coding ghost that cleans up your mess.",
+  "version": "0.0.1",
+  "publisher": "mdg-space",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.improveCode",
+        "title": "Improve Code"
+      },
+      {
+        "command": "extension.suggetCommitMessage",
+        "title": "Suggest Commit Message"
+      },
+      {
+        "command": "extension.createRepo",
+        "title": "Create Repo"
+      },
+      {
+        "command": "extension.commentDocs",
+        "title": "Comment Docs"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "webpack --mode production",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.0",
+    "vscode": "^1.1.36",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
