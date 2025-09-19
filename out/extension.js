@@ -34,23 +34,48 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
-const gemini_1 = require("./utils/gemini");
+const gitUtils_1 = require("./utils/gitUtils");
 function activate(context) {
-    function fetchVSCodeDescription() {
-        return __awaiter(this, void 0, void 0, function* () {
-            vscode.window.showInformationMessage('GhostDev is haunting your code — watch it clean up your mess!');
-            const prompt = 'What is Visual Studio Code?';
-            try {
-                const description = yield (0, gemini_1.callGemini)(prompt);
-                vscode.window.showInformationMessage(description);
+    vscode.window.showInformationMessage('GhostDev is haunting your code — watch it clean up your mess!');
+    let disposable = vscode.commands.registerCommand('extension.improveCode', () => __awaiter(this, void 0, void 0, function* () {
+        try {
+            let diffData = [];
+            yield vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: "Analyzing Staged Git Files...",
+                cancellable: false
+            }, () => __awaiter(this, void 0, void 0, function* () {
+                diffData = yield (0, gitUtils_1.getDiffData)();
+            }));
+            if (diffData.length === 0) {
+                vscode.window.showInformationMessage('No staged files found to analyze.');
+                return;
             }
-            catch (error) {
-                vscode.window.showErrorMessage('Failed to fetch Gemini response: ' + (error instanceof Error ? error.message : String(error)));
-            }
-        });
-    }
-    fetchVSCodeDescription();
+            const formattedContent = formatDataAsMarkdown(diffData);
+            const doc = yield vscode.workspace.openTextDocument({
+                content: formattedContent,
+                language: 'markdown'
+            });
+            yield vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        }
+        catch (error) {
+            console.error('Failed to execute "improveCode" command:', error);
+            vscode.window.showErrorMessage(`An unexpected error occurred: ${error.message}`);
+        }
+    }));
+    context.subscriptions.push(disposable);
 }
 exports.activate = activate;
+function formatDataAsMarkdown(diffData) {
+    const reportParts = diffData.map(item => {
+        var _a;
+        const fileHeader = `# File: ${item.name}\n---`;
+        const diffSection = `## Diff\n\`\`\`diff\n${item.diff}\n\`\`\``;
+        const codeContent = (_a = item.code) !== null && _a !== void 0 ? _a : 'File content not available (e.g., file was deleted).';
+        const codeSection = `## Staged Code\n\`\`\`\n${codeContent}\n\`\`\``;
+        return `${fileHeader}\n\n${diffSection}\n\n${codeSection}`;
+    });
+    return `# Git Staged Changes Report\n\n${reportParts.join('\n\n')}`;
+}
 function deactivate() { }
 exports.deactivate = deactivate;
