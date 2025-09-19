@@ -35,47 +35,61 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
 const gitUtils_1 = require("./utils/gitUtils");
+const geminiUtils_1 = require("./utils/geminiUtils");
+const path = __importStar(require("path"));
 function activate(context) {
     vscode.window.showInformationMessage('GhostDev is haunting your code — watch it clean up your mess!');
+    // Register the command that ties everything together
     let disposable = vscode.commands.registerCommand('extension.improveCode', () => __awaiter(this, void 0, void 0, function* () {
         try {
-            let diffData = [];
             yield vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: "Analyzing Staged Git Files...",
+                title: "Improving Code",
                 cancellable: false
-            }, () => __awaiter(this, void 0, void 0, function* () {
-                diffData = yield (0, gitUtils_1.getDiffData)();
+            }, (progress) => __awaiter(this, void 0, void 0, function* () {
+                // Step 1: Get staged file data from Git
+                progress.report({ message: "Fetching staged changes..." });
+                const diffData = yield (0, gitUtils_1.getDiffData)();
+                if (diffData.length === 0) {
+                    vscode.window.showInformationMessage('No staged files found to improve.');
+                    return; // Exit if there's nothing to do
+                }
+                // Step 2: Pass the data to Gemini for refinement
+                progress.report({ message: "Analyzing and refining with AI..." });
+                const refinedData = yield (0, geminiUtils_1.getCodeRefinements)(diffData);
+                // Step 3: Format and display the results
+                progress.report({ message: "Preparing report..." });
+                const reportContent = formatRefinementAsMarkdown(refinedData);
+                const doc = yield vscode.workspace.openTextDocument({
+                    content: reportContent,
+                    language: 'markdown'
+                });
+                // Show the report in a new editor column
+                yield vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
             }));
-            if (diffData.length === 0) {
-                vscode.window.showInformationMessage('No staged files found to analyze.');
-                return;
-            }
-            const formattedContent = formatDataAsMarkdown(diffData);
-            const doc = yield vscode.workspace.openTextDocument({
-                content: formattedContent,
-                language: 'markdown'
-            });
-            yield vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         }
         catch (error) {
-            console.error('Failed to execute "improveCode" command:', error);
-            vscode.window.showErrorMessage(`An unexpected error occurred: ${error.message}`);
+            console.error('An error occurred during the improveCode command:', error);
+            vscode.window.showErrorMessage(`Failed to improve code: ${error.message}`);
         }
     }));
     context.subscriptions.push(disposable);
 }
 exports.activate = activate;
-function formatDataAsMarkdown(diffData) {
-    const reportParts = diffData.map(item => {
-        var _a;
+/**
+ * Formats the refined data from the Gemini API into a readable Markdown string.
+ */
+function formatRefinementAsMarkdown(refinedData) {
+    const reportParts = refinedData.map(item => {
         const fileHeader = `# File: ${item.name}\n---`;
-        const diffSection = `## Diff\n\`\`\`diff\n${item.diff}\n\`\`\``;
-        const codeContent = (_a = item.code) !== null && _a !== void 0 ? _a : 'File content not available (e.g., file was deleted).';
-        const codeSection = `## Staged Code\n\`\`\`\n${codeContent}\n\`\`\``;
-        return `${fileHeader}\n\n${diffSection}\n\n${codeSection}`;
+        const descSection = `## Description\n${item.desc}`;
+        // Determine the language for syntax highlighting from the file extension
+        const language = path.extname(item.name).substring(1);
+        const codeSection = `## Refined Code\n\`\`\`${language}\n${item.code}\n\`\`\``;
+        return `${fileHeader}\n\n${descSection}\n\n${codeSection}`;
     });
-    return `# Git Staged Changes Report\n\n${reportParts.join('\n\n')}`;
+    const title = `# Code Refinement Report\n\nGenerated on: ${new Date().toLocaleString()}\n\n`;
+    return title + reportParts.join('\n\n---\n\n');
 }
 function deactivate() { }
 exports.deactivate = deactivate;
