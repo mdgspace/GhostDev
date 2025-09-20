@@ -32,11 +32,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateFilesInWorkspace = exports.runCommandVisible = exports.runCommandHidden = exports.executeCommand = void 0;
+exports.makeFileStructure = exports.updateFilesInWorkspace = exports.runCommandVisible = exports.runCommandHidden = exports.executeCommand = void 0;
 const vscode = __importStar(require("vscode"));
 const child_process_1 = require("child_process");
 const util_1 = require("util");
 const path = __importStar(require("path"));
+const jsonc_parser_1 = require("jsonc-parser");
 const execAsync = (0, util_1.promisify)(child_process_1.exec);
 function executeCommand(command) {
     var _a;
@@ -131,3 +132,59 @@ function updateFilesInWorkspace(files, desc) {
     });
 }
 exports.updateFilesInWorkspace = updateFilesInWorkspace;
+function makeFileStructure(files) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const workspaceFolder = (_a = vscode.workspace.workspaceFolders) === null || _a === void 0 ? void 0 : _a[0];
+        if (!workspaceFolder) {
+            throw new Error("No open project folder found.");
+        }
+        const rootUri = workspaceFolder.uri;
+        yield vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Creating your new project...",
+            cancellable: false
+        }, (progress) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                progress.report({ message: "Generating files and folders..." });
+                const createdDirs = new Set();
+                for (const file of files) {
+                    const fileUri = vscode.Uri.joinPath(rootUri, file.fullPath);
+                    const dirUri = vscode.Uri.file(path.dirname(fileUri.fsPath));
+                    if (!createdDirs.has(dirUri.fsPath)) {
+                        yield vscode.workspace.fs.createDirectory(dirUri);
+                        createdDirs.add(dirUri.fsPath);
+                    }
+                    let contentToWrite = file.content;
+                    // If the file is package.json, ensure its content is valid and formatted JSON
+                    if (path.basename(file.fullPath) === 'package.json') {
+                        try {
+                            const parsedJson = (0, jsonc_parser_1.parse)(contentToWrite);
+                            contentToWrite = JSON.stringify(parsedJson, null, 2);
+                        }
+                        catch (e) {
+                            console.warn(`Could not parse package.json content for ${file.fullPath}, writing as is.`);
+                        }
+                    }
+                    const contentBytes = new TextEncoder().encode(contentToWrite);
+                    yield vscode.workspace.fs.writeFile(fileUri, contentBytes);
+                }
+                progress.report({ message: "Initializing Git repository..." });
+                yield executeCommand('git init');
+                const hasPackageJson = files.some(file => path.basename(file.fullPath) === 'package.json');
+                if (hasPackageJson) {
+                    progress.report({ message: "Installing dependencies (npm install)..." });
+                    yield executeCommand('npm install');
+                }
+                progress.report({ message: "Staging all files..." });
+                yield executeCommand('git add .');
+                vscode.window.showInformationMessage('Project scaffolding complete!');
+            }
+            catch (error) {
+                console.error('Failed to make file structure:', error);
+                vscode.window.showErrorMessage(`Project creation failed: ${error.message}`);
+            }
+        }));
+    });
+}
+exports.makeFileStructure = makeFileStructure;

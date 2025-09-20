@@ -19,11 +19,9 @@ export interface ProjectDetails {
     techStack: string[];
 }
 
-export interface FileOrFolder {
-    type: 'file' | 'folder';
-    name: string;
-    content?: string;
-    children?: FileOrFolder[];
+export interface FlatFile {
+    fullPath: string;
+    content: string;
 }
 
 let key = () => {
@@ -104,9 +102,10 @@ export async function suggestComment(files: GitDiffData[]): Promise<string> {
     return text.trim();
 }
 
-export async function generateFileStructure(details: ProjectDetails): Promise<FileOrFolder[]> {
+
+export async function generateFileStructure(details: ProjectDetails): Promise<FlatFile[]> {
     const apiKey = key();
-    const prompt = fileStructurePrompt(details);
+    const prompt = fileListPrompt(details);
     const response = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: {
@@ -116,7 +115,8 @@ export async function generateFileStructure(details: ProjectDetails): Promise<Fi
         body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-                responseMimeType: "application/json",
+                // We ask for plain text, not JSON
+                maxOutputTokens: 8192,
             },
         }),
     });
@@ -133,17 +133,37 @@ export async function generateFileStructure(details: ProjectDetails): Promise<Fi
         throw new Error('No valid content found in Gemini API response.');
     }
 
-    try {
-        const parsedJson = JSON.parse(responseText);
-        const structure: FileOrFolder[] = parsedJson.projectStructure;
-        if (!structure || !Array.isArray(structure)) {
-             throw new Error("Response JSON is missing the 'projectStructure' array.");
-        }
-        return structure;
-    } catch (error) {
-        throw new Error("The response from the Gemini API was not valid JSON or did not match the expected format.");
-    }
+    return responseText
+        .trim()
+        .split('\n')
+        .map((line: string) => {
+            const [fullPath, ...contentParts] = line.split(':::');
+            const content = contentParts.join(':::');
+            return { fullPath: fullPath.trim(), content: content.trim() };
+        })
+        .filter((file: { fullPath: string, content: string }) => file.fullPath && file.content);
 }
+
+const fileListPrompt = (details: ProjectDetails): string => (
+`You are a project scaffolding assistant. Your task is to generate the full contents of all files for a new software project.
+
+Project Name: ${details.name}
+Project Description: ${details.desc}
+Tech Stack: ${details.techStack.join(', ')}
+
+**RESPONSE INSTRUCTIONS:**
+1.  Generate a list of all necessary files.
+2.  Each line in your response must represent one file.
+3.  Each line **MUST** be in the format: \`filePath:::fileContent\`.
+4.  Do **NOT** respond in JSON format. Respond in the custom plain text format described.
+5.  Include all necessary configuration files like \`package.json\`, \`.gitignore\`, etc.
+6.  For \`package.json\`, provide a valid JSON object as the content.
+
+**EXAMPLE:**
+./src/index.js:::console.log("Hello, World!");
+./package.json:::{ "name": "${details.name}", "version": "1.0.0" }
+`
+);
 
 const codeRefinementPrompt = (files: GitDiffData[]):string => (
 `
@@ -181,28 +201,5 @@ Here are the diffs:
 \`\`\`json
 ${JSON.stringify(files.map(f => ({ name: f.name, diff: f.diff })), null, 2)}
 \`\`\`
-`
-);
-
-const fileStructurePrompt = (details: ProjectDetails): string => (
-`You are an expert software architect and project scaffolding assistant. Your task is to generate a complete and optimal file structure along with functional boilerplate code for a new software project based on the provided details.
-
-**Project Name:** \`${details.name}\`
-**Project Description:** \`${details.desc}\`
-**Tech Stack:** \`${details.techStack.join(', ')}\`
-
-**Instructions:**
-1. Analyze the project requirements and the specified tech stack.
-2. Create a logical directory structure that follows industry best practices.
-3. Include all necessary configuration files (e.g., \`package.json\`, \`.gitignore\`, \`tsconfig.json\`, \`vite.config.ts\`).
-4. Provide clean, well-commented, and runnable boilerplate code for the entry-point files and at least one example component.
-5. Your entire response **MUST** be a single, valid JSON object. The root of this object should contain one key, \`"projectStructure"\`, which holds an array of file and folder objects.
-
-**JSON Object Schema:**
-* Each object in the array represents a file or a folder.
-* An object must have a \`type\` property, which is either \`"file"\` or \`"folder"\`.
-* An object must have a \`name\` property (e.g., \`"src"\`, \`"index.js"\`).
-* If \`type\` is \`"file"\`, it must have a \`content\` property containing the boilerplate code as a string.
-* If \`type\` is \`"folder"\`, it must have a \`children\` property, which is an array of more file/folder objects.
 `
 );

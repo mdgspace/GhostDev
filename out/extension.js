@@ -39,7 +39,47 @@ const geminiUtils_1 = require("./utils/geminiUtils");
 const terminalUtils_1 = require("./utils/terminalUtils");
 function initializeProject() {
     return __awaiter(this, void 0, void 0, function* () {
-        vscode.window.showInformationMessage('Initializing project with GhostDev...');
+        const name = yield vscode.window.showInputBox({
+            prompt: 'Enter the Project Name',
+            placeHolder: 'project-name',
+            validateInput: text => {
+                return text ? null : 'Project name cannot be empty.';
+            }
+        });
+        if (!name) {
+            return;
+        }
+        const desc = yield vscode.window.showInputBox({
+            prompt: 'Please enter a short description of the project.',
+            placeHolder: 'A client-side app to manage user tasks...'
+        });
+        if (desc === undefined) {
+            return;
+        }
+        const techStack = yield vscode.window.showQuickPick(['React', 'Vue', 'Svelte', 'TypeScript', 'Tailwind CSS', 'Node.js', 'Express'], {
+            canPickMany: true,
+            placeHolder: 'Select the technologies you want to use'
+        });
+        if (!techStack || techStack.length === 0) {
+            return;
+        }
+        const projectDetails = { name, desc, techStack };
+        try {
+            const fileStructure = yield vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: "GhostDev is building a spooky project",
+                cancellable: false
+            }, (progress) => __awaiter(this, void 0, void 0, function* () {
+                progress.report({ message: "Generating project architecture..." });
+                return yield (0, geminiUtils_1.generateFileStructure)(projectDetails);
+            }));
+            if (fileStructure) {
+                yield (0, terminalUtils_1.makeFileStructure)(fileStructure);
+            }
+        }
+        catch (error) {
+            vscode.window.showErrorMessage(`Project initialization failed: ${error.message}`);
+        }
     });
 }
 function onFilesStaged() {
@@ -54,7 +94,7 @@ function onFilesStaged() {
         }
         yield vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: "Haunting in progress...",
+            title: "Haunting in progress",
             cancellable: false
         }, (progress) => __awaiter(this, void 0, void 0, function* () {
             var _a;

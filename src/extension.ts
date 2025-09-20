@@ -1,11 +1,53 @@
 import * as vscode from 'vscode';
 import { GitExtension, Repository } from './git';
 import { getDiffData, openDifftool } from './utils/gitUtils';
-import { getCodeRefinements, suggestComment, RefinedCode } from './utils/geminiUtils';
-import { updateFilesInWorkspace, executeCommand } from './utils/terminalUtils';
+import { getCodeRefinements, suggestComment, ProjectDetails, generateFileStructure } from './utils/geminiUtils';
+import { updateFilesInWorkspace, executeCommand, makeFileStructure } from './utils/terminalUtils';
 
 async function initializeProject() {
-    vscode.window.showInformationMessage('Initializing project with GhostDev...');
+	const name = await vscode.window.showInputBox({
+		prompt: 'Enter the Project Name',
+		placeHolder: 'project-name',
+		validateInput: text => {
+			return text ? null : 'Project name cannot be empty.';
+		}
+	});
+	if (!name) { return; }
+
+	const desc = await vscode.window.showInputBox({
+		prompt: 'Please enter a short description of the project.',
+		placeHolder: 'A client-side app to manage user tasks...'
+	});
+	if (desc === undefined) { return; }
+
+	const techStack = await vscode.window.showQuickPick(
+		['React', 'Vue', 'Svelte', 'TypeScript', 'Tailwind CSS', 'Node.js', 'Express'],
+		{
+			canPickMany: true,
+			placeHolder: 'Select the technologies you want to use'
+		}
+	);
+	if (!techStack || techStack.length === 0) { return; }
+
+	const projectDetails: ProjectDetails = {name,desc,techStack};
+
+	try {
+		const fileStructure = await vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: "GhostDev is building a spooky project",
+			cancellable: false
+		}, async (progress) => {
+			progress.report({ message: "Generating project architecture..." });
+			return await generateFileStructure(projectDetails);
+		});
+		
+		if (fileStructure) {
+			await makeFileStructure(fileStructure);
+		}
+
+	} catch (error: any) {
+		vscode.window.showErrorMessage(`Project initialization failed: ${error.message}`);
+	}
 }
 
 async function onFilesStaged() {
@@ -29,7 +71,7 @@ async function onFilesStaged() {
 
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: "Haunting in progress...",
+        title: "Haunting in progress",
         cancellable: false
     }, async (progress) => {
         try {
