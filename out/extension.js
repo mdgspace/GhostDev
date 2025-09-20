@@ -22,58 +22,106 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activate = void 0;
+exports.deactivate = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
+const gitUtils_1 = require("./utils/gitUtils");
+const geminiUtils_1 = require("./utils/geminiUtils");
+const terminalUtils_1 = require("./utils/terminalUtils");
+function onFilesStaged() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const message = 'Let GhostDev handle the rest for you!';
+        const hauntCodeButton = { title: 'Haunt Code' };
+        const hauntWithDescButton = { title: 'Haunt Code with Description' };
+        const cancelButton = { title: 'Cancel' };
+        const selection = yield vscode.window.showInformationMessage(message, { modal: false }, hauntCodeButton, hauntWithDescButton, cancelButton);
+        if (!selection || selection.title === cancelButton.title) {
+            return;
+        }
+        yield vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Haunting in progress...",
+            cancellable: false
+        }, (progress) => __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            try {
+                // --- getDiffData ---
+                progress.report({ message: "Analyzing staged files..." });
+                const diffData = yield (0, gitUtils_1.getDiffData)();
+                if (diffData.length === 0) {
+                    vscode.window.showInformationMessage("No staged changes found to haunt.");
+                    return;
+                }
+                // --- getCodeRefinements & suggestComment (run in parallel) ---
+                progress.report({ message: "Consulting the code spirits..." });
+                const [refinedCode, suggestedComment] = yield Promise.all([
+                    (0, geminiUtils_1.getCodeRefinements)(diffData),
+                    (0, geminiUtils_1.suggestComment)(diffData)
+                ]);
+                // --- updateFilesInWorkspace ---
+                progress.report({ message: "Applying code enchantments..." });
+                const shouldIncludeDescription = selection === hauntWithDescButton;
+                yield (0, terminalUtils_1.updateFilesInWorkspace)(refinedCode, shouldIncludeDescription);
+                // --- openDiffTool ---
+                progress.report({ message: "Opening difftool for your review..." });
+                yield (0, gitUtils_1.openDifftool)();
+                // --- stage refined files ---
+                progress.report({ message: "Staging refined files..." });
+                yield (0, terminalUtils_1.executeCommand)('git add .');
+                // --- Inject commit command into the terminal ---
+                const terminal = (_a = vscode.window.activeTerminal) !== null && _a !== void 0 ? _a : vscode.window.createTerminal('GhostDev Terminal');
+                terminal.show();
+                terminal.sendText(`git commit -m "${suggestedComment}"`, false);
+            }
+            catch (error) {
+                console.error("GhostDev failed:", error);
+                vscode.window.showErrorMessage(`GhostDev encountered a spooky error: ${error.message}`);
+            }
+        }));
+    });
+}
+function setupRepositoryWatcher(context, repository) {
+    const indexPath = vscode.Uri.joinPath(repository.rootUri, '.git/index');
+    const watcher = vscode.workspace.createFileSystemWatcher(indexPath.fsPath);
+    const handleIndexChange = () => {
+        setTimeout(() => {
+            if (repository.state.indexChanges.length > 0) {
+                onFilesStaged();
+            }
+        }, 100);
+    };
+    watcher.onDidChange(handleIndexChange);
+    watcher.onDidCreate(handleIndexChange);
+    watcher.onDidDelete(handleIndexChange);
+    context.subscriptions.push(watcher);
+}
 function activate(context) {
-    const provider = new SidebarViewProvider(context.extensionUri);
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider(SidebarViewProvider.viewType, provider));
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInformationMessage('GhostDev is now haunting your code!');
+        const gitExtension = (_a = vscode.extensions.getExtension('vscode.git')) === null || _a === void 0 ? void 0 : _a.exports;
+        const git = gitExtension === null || gitExtension === void 0 ? void 0 : gitExtension.getAPI(1);
+        if (!git) {
+            vscode.window.showWarningMessage('GhostDev is unable to load the Git extension.');
+            return;
+        }
+        for (const repository of git.repositories) {
+            setupRepositoryWatcher(context, repository);
+        }
+        git.onDidOpenRepository(repository => {
+            setupRepositoryWatcher(context, repository);
+        });
+    });
 }
 exports.activate = activate;
-class SidebarViewProvider {
-    constructor(_extensionUri) {
-        this._extensionUri = _extensionUri;
-    }
-    resolveWebviewView(webviewView, context, _token) {
-        this._view = webviewView;
-        webviewView.webview.options = {
-            enableScripts: true,
-            localResourceRoots: [vscode.Uri.joinPath(this._extensionUri, 'media')]
-        };
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-        webviewView.webview.onDidReceiveMessage(data => {
-            switch (data.type) {
-                case 'buttonClicked': {
-                    const selectedOptions = data.options;
-                    vscode.window.showInformationMessage(`Button clicked! Options selected: ${JSON.stringify(selectedOptions)}`);
-                    break;
-                }
-            }
-        });
-    }
-    _getHtmlForWebview(webview) {
-        const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'sidebar.html');
-        let htmlContent = fs.readFileSync(htmlPath, 'utf8');
-        const stylesUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'sidebar.css'));
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'main.js'));
-        const nonce = getNonce();
-        // Replace placeholders in the HTML
-        htmlContent = htmlContent.replace(/\${webview.cspSource}/g, webview.cspSource);
-        htmlContent = htmlContent.replace(/\${nonce}/g, nonce);
-        htmlContent = htmlContent.replace(/\${stylesUri}/g, stylesUri.toString());
-        htmlContent = htmlContent.replace(/\${scriptUri}/g, scriptUri.toString());
-        return htmlContent;
-    }
-}
-SidebarViewProvider.viewType = 'ghost-dev-view';
-// Helper function to generate a random nonce for security
-function getNonce() {
-    let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
-}
+function deactivate() { }
+exports.deactivate = deactivate;

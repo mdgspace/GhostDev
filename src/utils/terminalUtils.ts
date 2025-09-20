@@ -67,7 +67,7 @@ function formatDescComment(description: string, fileName: string): string {
     }
 }
 
-export async function updateFilesInWorkspace(files: RefinedCode[]): Promise<void> {
+export async function updateFilesInWorkspace(files: RefinedCode[], desc: Boolean): Promise<void> {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
         throw new Error("No open project folder found. Cannot update files.");
@@ -77,7 +77,7 @@ export async function updateFilesInWorkspace(files: RefinedCode[]): Promise<void
         const updatePromises = files.map(async (file) => {
             const fileUri = vscode.Uri.joinPath(rootUri, file.name);
             const formattedComment = formatDescComment(file.desc, file.name);
-            const newContent = `${formattedComment}\n\n${file.code}`;
+            const newContent = desc? `${formattedComment}\n\n${file.code}`:file.code;
             const contentBytes = new TextEncoder().encode(newContent);
             await vscode.workspace.fs.writeFile(fileUri, contentBytes);
         });

@@ -35,5 +35,8 @@
   "dependencies": {
     "dotenv": "^17.2.2",
     "node-fetch": "^3.3.2"
-  }
+  },
+  "extensionDependencies": [
+    "vscode.git"
+  ]
 }

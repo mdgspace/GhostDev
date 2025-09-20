@@ -105,7 +105,7 @@ function formatDescComment(description, fileName) {
             return ['/**', ...lines.map(line => ` * ${line}`), ' */'].join('\n');
     }
 }
-function updateFilesInWorkspace(files) {
+function updateFilesInWorkspace(files, desc) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const workspaceFolder = (_a = vscode.workspace.workspaceFolders) === null || _a === void 0 ? void 0 : _a[0];
@@ -117,7 +117,7 @@ function updateFilesInWorkspace(files) {
             const updatePromises = files.map((file) => __awaiter(this, void 0, void 0, function* () {
                 const fileUri = vscode.Uri.joinPath(rootUri, file.name);
                 const formattedComment = formatDescComment(file.desc, file.name);
-                const newContent = `${formattedComment}\n\n${file.code}`;
+                const newContent = desc ? `${formattedComment}\n\n${file.code}` : file.code;
                 const contentBytes = new TextEncoder().encode(newContent);
                 yield vscode.workspace.fs.writeFile(fileUri, contentBytes);
             }));
