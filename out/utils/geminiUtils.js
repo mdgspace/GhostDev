@@ -35,20 +35,27 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCodeRefinements = exports.callGemini = void 0;
+exports.suggestComment = exports.getCodeRefinements = void 0;
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const dotenv = __importStar(require("dotenv"));
 const path = __importStar(require("path"));
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-function callGemini(prompt) {
-    var _a, _b, _c, _d, _e, _f;
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+let key = () => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error('Gemini API key not set in .env file');
+    }
+    return apiKey;
+};
+function getCodeRefinements(files) {
+    var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error('Gemini API key not set in .env file');
+        const apiKey = key();
+        if (files.length === 0) {
+            throw new Error('No files provided for refinement.');
         }
-        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`;
+        const prompt = codeRefinementPrompt(files);
         const response = yield (0, node_fetch_1.default)(GEMINI_URL, {
             method: 'POST',
             headers: {
@@ -57,35 +64,62 @@ function callGemini(prompt) {
             },
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                },
             }),
         });
         if (!response.ok) {
-            const errorBody = yield response.json().catch(() => ({}));
-            const errorMessage = ((_a = errorBody === null || errorBody === void 0 ? void 0 : errorBody.error) === null || _a === void 0 ? void 0 : _a.message) || response.statusText;
-            throw new Error(`Gemini API request failed with status ${response.status}: ${errorMessage}`);
+            const errorBody = yield response.text();
+            throw new Error(`Gemini API request failed with status ${response.status}: ${errorBody}`);
         }
         const data = yield response.json();
-        // Use optional chaining to safely access the nested text property
-        const text = (_f = (_e = (_d = (_c = (_b = data === null || data === void 0 ? void 0 : data.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.text;
-        // If text is null, undefined, or an empty string, throw an error
-        if (!text) {
-            throw new Error('No valid content or text found in Gemini API response.');
+        const responseText = (_e = (_d = (_c = (_b = (_a = data === null || data === void 0 ? void 0 : data.candidates) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.text;
+        if (!responseText) {
+            throw new Error('No valid content found in Gemini API response.');
         }
-        return text;
+        try {
+            const refinedData = JSON.parse(responseText);
+            return refinedData;
+        }
+        catch (error) {
+            throw new Error("The response from the Gemini API was not valid JSON.");
+        }
     });
 }
-exports.callGemini = callGemini;
-function getCodeRefinements(files) {
+exports.getCodeRefinements = getCodeRefinements;
+function suggestComment(files) {
     var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error('Gemini API key not set in .env file');
+        const apiKey = key();
+        if (files.length === 0) {
+            throw new Error('No files provided to generate a commit message.');
         }
-        // Using a model that supports JSON mode well, like Gemini 1.5 Pro or Flash
-        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
-        // 1. Construct the detailed prompt
-        const prompt = `
+        const prompt = conventionalCommitPrompt(files);
+        const response = yield (0, node_fetch_1.default)(GEMINI_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-goog-api-key': apiKey,
+            },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            }),
+        });
+        if (!response.ok) {
+            const errorBody = yield response.text();
+            throw new Error(`Gemini API request failed with status ${response.status}: ${errorBody}`);
+        }
+        const data = yield response.json();
+        const text = (_e = (_d = (_c = (_b = (_a = data === null || data === void 0 ? void 0 : data.candidates) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.text;
+        if (!text) {
+            throw new Error('No valid content found in Gemini API response.');
+        }
+        return text.trim();
+    });
+}
+exports.suggestComment = suggestComment;
+const codeRefinementPrompt = (files) => (`
 You are an expert code reviewer and senior software engineer. Your task is to analyze code changes, understand the developer's intent, and provide a refined, more efficient, and robust version of the code. You must also provide a concise, high-level description of what each file does.
 
 Analyze the following array of file data. For each file, use the 'diff' to understand the intended changes and then refine the entire 'code' to be more efficient, robust, and aligned with best practices.
@@ -101,41 +135,20 @@ Input Data:
 \`\`\`json
 ${JSON.stringify(files, null, 2)}
 \`\`\`
-`;
-        // 2. Make the API call with JSON mode enabled
-        const response = yield (0, node_fetch_1.default)(GEMINI_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-goog-api-key': apiKey,
-            },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    // Enforce JSON output
-                    responseMimeType: "application/json",
-                },
-            }),
-        });
-        if (!response.ok) {
-            const errorBody = yield response.text();
-            throw new Error(`Gemini API request failed with status ${response.status}: ${errorBody}`);
-        }
-        const data = yield response.json();
-        // 3. Safely parse the response
-        const responseText = (_e = (_d = (_c = (_b = (_a = data === null || data === void 0 ? void 0 : data.candidates) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.text;
-        if (!responseText) {
-            throw new Error('No valid content found in Gemini API response.');
-        }
-        try {
-            // The response text itself is the JSON we need
-            const refinedData = JSON.parse(responseText);
-            return refinedData;
-        }
-        catch (error) {
-            console.error("Failed to parse JSON response from Gemini:", responseText);
-            throw new Error("The response from the Gemini API was not valid JSON.");
-        }
-    });
-}
-exports.getCodeRefinements = getCodeRefinements;
+`);
+const conventionalCommitPrompt = (files) => (`
+You are an expert at writing concise and informative git commit messages. Analyze the following git diffs and generate a single, conventional commit message that summarizes all the changes.
+
+Constraints:
+- The message must follow the Conventional Commits specification.
+- The format must be <type>(<scope>): <subject>.
+- The <scope> should be a short word describing the area of the codebase affected (e.g., 'api', 'ui', 'utils').
+- The entire message must be less than 20 words.
+- Do not include a body or footer.
+- Your response must be only the commit message string, with no extra text or markdown.
+
+Here are the diffs:
+\`\`\`json
+${JSON.stringify(files.map(f => ({ name: f.name, diff: f.diff })), null, 2)}
+\`\`\`
+`);

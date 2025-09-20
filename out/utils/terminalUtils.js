@@ -32,10 +32,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runCommandVisible = exports.runCommandHidden = exports.executeCommand = void 0;
+exports.updateFilesInWorkspace = exports.runCommandVisible = exports.runCommandHidden = exports.executeCommand = void 0;
 const vscode = __importStar(require("vscode"));
 const child_process_1 = require("child_process");
 const util_1 = require("util");
+const path = __importStar(require("path"));
 const execAsync = (0, util_1.promisify)(child_process_1.exec);
 function executeCommand(command) {
     var _a;
@@ -75,3 +76,58 @@ function runCommandVisible(command) {
     });
 }
 exports.runCommandVisible = runCommandVisible;
+function formatDescComment(description, fileName) {
+    const extension = path.extname(fileName);
+    const lines = description.trim().split('\n');
+    switch (extension) {
+        case '.js':
+        case '.ts':
+        case '.jsx':
+        case '.tsx':
+        case '.css':
+        case '.scss':
+        case '.java':
+        case '.c':
+        case '.cpp':
+        case '.cs':
+        case '.go':
+            if (lines.length === 1) {
+                return `/** ${lines[0]} */`;
+            }
+            return ['/**', ...lines.map(line => ` * ${line}`), ' */'].join('\n');
+        case '.py':
+        case '.rb':
+            return ['"""', ...lines, '"""'].join('\n');
+        case '.html':
+        case '.xml':
+            return ['<!--', ...lines.map(line => `  ${line}`), '-->'].join('\n');
+        default:
+            return ['/**', ...lines.map(line => ` * ${line}`), ' */'].join('\n');
+    }
+}
+function updateFilesInWorkspace(files) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const workspaceFolder = (_a = vscode.workspace.workspaceFolders) === null || _a === void 0 ? void 0 : _a[0];
+        if (!workspaceFolder) {
+            throw new Error("No open project folder found. Cannot update files.");
+        }
+        const rootUri = workspaceFolder.uri;
+        try {
+            const updatePromises = files.map((file) => __awaiter(this, void 0, void 0, function* () {
+                const fileUri = vscode.Uri.joinPath(rootUri, file.name);
+                const formattedComment = formatDescComment(file.desc, file.name);
+                const newContent = `${formattedComment}\n\n${file.code}`;
+                const contentBytes = new TextEncoder().encode(newContent);
+                yield vscode.workspace.fs.writeFile(fileUri, contentBytes);
+            }));
+            yield Promise.all(updatePromises);
+            vscode.window.showInformationMessage(`Successfully updated ${files.length} file(s).`);
+        }
+        catch (error) {
+            console.error('Failed to update files in workspace:', error);
+            throw new Error(`An error occurred while writing files: ${error.message}`);
+        }
+    });
+}
+exports.updateFilesInWorkspace = updateFilesInWorkspace;

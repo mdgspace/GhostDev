@@ -5,7 +5,7 @@ import { GitDiffData } from './gitUtils';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
 
 export interface RefinedCode {
     name:string;
@@ -59,6 +59,38 @@ export async function getCodeRefinements(files: GitDiffData[]): Promise<RefinedC
     }
 }
 
+export async function suggestComment(files: GitDiffData[]): Promise<string> {
+    const apiKey = key();
+    if (files.length === 0) {
+        throw new Error('No files provided to generate a commit message.');
+    }
+    const prompt = conventionalCommitPrompt(files);
+    const response = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        }),
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Gemini API request failed with status ${response.status}: ${errorBody}`);
+    }
+
+    const data = await response.json() as any;
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+        throw new Error('No valid content found in Gemini API response.');
+    }
+
+    return text.trim();
+}
+
 const codeRefinementPrompt = (files: GitDiffData[]):string => (
 `
 You are an expert code reviewer and senior software engineer. Your task is to analyze code changes, understand the developer's intent, and provide a refined, more efficient, and robust version of the code. You must also provide a concise, high-level description of what each file does.
@@ -77,4 +109,23 @@ Input Data:
 ${JSON.stringify(files, null, 2)}
 \`\`\`
 `
-)
+);
+
+const conventionalCommitPrompt = (files: GitDiffData[]): string => (
+`
+You are an expert at writing concise and informative git commit messages. Analyze the following git diffs and generate a single, conventional commit message that summarizes all the changes.
+
+Constraints:
+- The message must follow the Conventional Commits specification.
+- The format must be <type>(<scope>): <subject>.
+- The <scope> should be a short word describing the area of the codebase affected (e.g., 'api', 'ui', 'utils').
+- The entire message must be less than 20 words.
+- Do not include a body or footer.
+- Your response must be only the commit message string, with no extra text or markdown.
+
+Here are the diffs:
+\`\`\`json
+${JSON.stringify(files.map(f => ({ name: f.name, diff: f.diff })), null, 2)}
+\`\`\`
+`
+);

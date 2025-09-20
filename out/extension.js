@@ -22,74 +22,58 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivate = exports.activate = void 0;
+exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
-const gitUtils_1 = require("./utils/gitUtils");
-const geminiUtils_1 = require("./utils/geminiUtils");
+const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 function activate(context) {
-    vscode.window.showInformationMessage('GhostDev is haunting your code — watch it clean up your mess!');
-    // Register the command that ties everything together
-    let disposable = vscode.commands.registerCommand('extension.improveCode', () => __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Improving Code",
-                cancellable: false
-            }, (progress) => __awaiter(this, void 0, void 0, function* () {
-                // Step 1: Get staged file data from Git
-                progress.report({ message: "Fetching staged changes..." });
-                const diffData = yield (0, gitUtils_1.getDiffData)();
-                if (diffData.length === 0) {
-                    vscode.window.showInformationMessage('No staged files found to improve.');
-                    return; // Exit if there's nothing to do
-                }
-                // Step 2: Pass the data to Gemini for refinement
-                progress.report({ message: "Analyzing and refining with AI..." });
-                const refinedData = yield (0, geminiUtils_1.getCodeRefinements)(diffData);
-                // Step 3: Format and display the results
-                progress.report({ message: "Preparing report..." });
-                const reportContent = formatRefinementAsMarkdown(refinedData);
-                const doc = yield vscode.workspace.openTextDocument({
-                    content: reportContent,
-                    language: 'markdown'
-                });
-                // Show the report in a new editor column
-                yield vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
-            }));
-        }
-        catch (error) {
-            console.error('An error occurred during the improveCode command:', error);
-            vscode.window.showErrorMessage(`Failed to improve code: ${error.message}`);
-        }
-    }));
-    context.subscriptions.push(disposable);
+    const provider = new SidebarViewProvider(context.extensionUri);
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(SidebarViewProvider.viewType, provider));
 }
 exports.activate = activate;
-/**
- * Formats the refined data from the Gemini API into a readable Markdown string.
- */
-function formatRefinementAsMarkdown(refinedData) {
-    const reportParts = refinedData.map(item => {
-        const fileHeader = `# File: ${item.name}\n---`;
-        const descSection = `## Description\n${item.desc}`;
-        // Determine the language for syntax highlighting from the file extension
-        const language = path.extname(item.name).substring(1);
-        const codeSection = `## Refined Code\n\`\`\`${language}\n${item.code}\n\`\`\``;
-        return `${fileHeader}\n\n${descSection}\n\n${codeSection}`;
-    });
-    const title = `# Code Refinement Report\n\nGenerated on: ${new Date().toLocaleString()}\n\n`;
-    return title + reportParts.join('\n\n---\n\n');
+class SidebarViewProvider {
+    constructor(_extensionUri) {
+        this._extensionUri = _extensionUri;
+    }
+    resolveWebviewView(webviewView, context, _token) {
+        this._view = webviewView;
+        webviewView.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [vscode.Uri.joinPath(this._extensionUri, 'media')]
+        };
+        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        webviewView.webview.onDidReceiveMessage(data => {
+            switch (data.type) {
+                case 'buttonClicked': {
+                    const selectedOptions = data.options;
+                    vscode.window.showInformationMessage(`Button clicked! Options selected: ${JSON.stringify(selectedOptions)}`);
+                    break;
+                }
+            }
+        });
+    }
+    _getHtmlForWebview(webview) {
+        const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'sidebar.html');
+        let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+        const stylesUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'sidebar.css'));
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'main.js'));
+        const nonce = getNonce();
+        // Replace placeholders in the HTML
+        htmlContent = htmlContent.replace(/\${webview.cspSource}/g, webview.cspSource);
+        htmlContent = htmlContent.replace(/\${nonce}/g, nonce);
+        htmlContent = htmlContent.replace(/\${stylesUri}/g, stylesUri.toString());
+        htmlContent = htmlContent.replace(/\${scriptUri}/g, scriptUri.toString());
+        return htmlContent;
+    }
 }
-function deactivate() { }
-exports.deactivate = deactivate;
+SidebarViewProvider.viewType = 'ghost-dev-view';
+// Helper function to generate a random nonce for security
+function getNonce() {
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
