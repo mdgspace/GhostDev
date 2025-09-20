@@ -37,13 +37,18 @@ const vscode = __importStar(require("vscode"));
 const gitUtils_1 = require("./utils/gitUtils");
 const geminiUtils_1 = require("./utils/geminiUtils");
 const terminalUtils_1 = require("./utils/terminalUtils");
+function initializeProject() {
+    return __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInformationMessage('Initializing project with GhostDev...');
+    });
+}
 function onFilesStaged() {
     return __awaiter(this, void 0, void 0, function* () {
         const message = 'Let GhostDev handle the rest for you!';
-        const hauntCodeButton = { title: 'Haunt Code' };
         const hauntWithDescButton = { title: 'Haunt Code with Description' };
+        const hauntCodeButton = { title: 'Haunt Code' };
         const cancelButton = { title: 'Cancel' };
-        const selection = yield vscode.window.showInformationMessage(message, { modal: false }, hauntCodeButton, hauntWithDescButton, cancelButton);
+        const selection = yield vscode.window.showInformationMessage(message, { modal: false }, hauntWithDescButton, hauntCodeButton, cancelButton);
         if (!selection || selection.title === cancelButton.title) {
             return;
         }
@@ -108,6 +113,18 @@ function activate(context) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         vscode.window.showInformationMessage('GhostDev is now haunting your code!');
+        if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+            const mainFolder = vscode.workspace.workspaceFolders[0].uri;
+            try {
+                const items = yield vscode.workspace.fs.readDirectory(mainFolder);
+                if (items.length === 0) {
+                    initializeProject();
+                }
+            }
+            catch (error) {
+                console.error("Failed to read workspace directory:", error);
+            }
+        }
         const gitExtension = (_a = vscode.extensions.getExtension('vscode.git')) === null || _a === void 0 ? void 0 : _a.exports;
         const git = gitExtension === null || gitExtension === void 0 ? void 0 : gitExtension.getAPI(1);
         if (!git) {

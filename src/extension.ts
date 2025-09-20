@@ -4,6 +4,10 @@ import { getDiffData, openDifftool } from './utils/gitUtils';
 import { getCodeRefinements, suggestComment, RefinedCode } from './utils/geminiUtils';
 import { updateFilesInWorkspace, executeCommand } from './utils/terminalUtils';
 
+async function initializeProject() {
+    vscode.window.showInformationMessage('Initializing project with GhostDev...');
+}
+
 async function onFilesStaged() {
 	
     const message = 'Let GhostDev handle the rest for you!';
@@ -90,6 +94,20 @@ function setupRepositoryWatcher(context: vscode.ExtensionContext, repository: Re
 
 export async function activate(context: vscode.ExtensionContext) {
 	vscode.window.showInformationMessage('GhostDev is now haunting your code!');
+
+	if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+		const mainFolder = vscode.workspace.workspaceFolders[0].uri;
+		try {
+			const items = await vscode.workspace.fs.readDirectory(mainFolder);
+			if (items.length === 0) {
+				initializeProject();
+			}
+		} catch (error) {
+			console.error("Failed to read workspace directory:", error);
+		}
+	}
+		
+
 	const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git')?.exports;
 	const git = gitExtension?.getAPI(1);
 	if (!git) {
