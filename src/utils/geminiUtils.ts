@@ -102,7 +102,6 @@ export async function suggestComment(files: GitDiffData[]): Promise<string> {
     return text.trim();
 }
 
-
 export async function generateFileStructure(details: ProjectDetails): Promise<FlatFile[]> {
     const apiKey = key();
     const prompt = fileListPrompt(details);
@@ -115,7 +114,6 @@ export async function generateFileStructure(details: ProjectDetails): Promise<Fl
         body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-                // We ask for plain text, not JSON
                 maxOutputTokens: 8192,
             },
         }),
@@ -138,10 +136,15 @@ export async function generateFileStructure(details: ProjectDetails): Promise<Fl
         .split('\n')
         .map((line: string) => {
             const [fullPath, ...contentParts] = line.split(':::');
-            const content = contentParts.join(':::');
+            let content = contentParts.join(':::');
+            
+            // --- ADD THIS LINE ---
+            // Replace the <NEWLINE> token with the actual newline character.
+            content = content.replace(/<NEWLINE>/g, '\n');
+
             return { fullPath: fullPath.trim(), content: content.trim() };
         })
-        .filter((file: { fullPath: string, content: string }) => file.fullPath && file.content);
+        .filter((file: { fullPath: string, content: string }) => file.fullPath);  
 }
 
 const fileListPrompt = (details: ProjectDetails): string => (
@@ -155,12 +158,12 @@ Tech Stack: ${details.techStack.join(', ')}
 1.  Generate a list of all necessary files.
 2.  Each line in your response must represent one file.
 3.  Each line **MUST** be in the format: \`filePath:::fileContent\`.
-4.  Do **NOT** respond in JSON format. Respond in the custom plain text format described.
-5.  Include all necessary configuration files like \`package.json\`, \`.gitignore\`, etc.
+4.  **CRITICAL**: For multi-line file content, you **MUST** replace every newline character with the special token "<NEWLINE>".
+5.  Do **NOT** respond in JSON format. Respond in the custom plain text format described.
 6.  For \`package.json\`, provide a valid JSON object as the content.
 
 **EXAMPLE:**
-./src/index.js:::console.log("Hello, World!");
+./src/index.js:::import React from 'react';<NEWLINE>console.log("Hello, World!");
 ./package.json:::{ "name": "${details.name}", "version": "1.0.0" }
 `
 );
