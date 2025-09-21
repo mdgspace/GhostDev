@@ -3,6 +3,8 @@ import { GitExtension, Repository } from './git';
 import { getDiffData, openDifftool } from './utils/gitUtils';
 import { getCodeRefinements, suggestComment, ProjectDetails, generateFileStructure } from './utils/geminiUtils';
 import { updateFilesInWorkspace, executeCommand, makeFileStructure } from './utils/terminalUtils';
+import { fetchAllRepos } from './utils/githubUtils';
+import { techStackData } from './assets/techStackData';
 
 async function initializeProject() {
 	const name = await vscode.window.showInputBox({
@@ -20,16 +22,39 @@ async function initializeProject() {
 	});
 	if (desc === undefined) { return; }
 
-	const techStack = await vscode.window.showQuickPick(
-		['React', 'Vue', 'Svelte', 'TypeScript', 'Tailwind CSS', 'Node.js', 'Express'],
-		{
-			canPickMany: true,
-			placeHolder: 'Select the technologies you want to use'
-		}
-	);
+	const techStackItems = techStackData.map(tech => ({
+		label: tech.label,
+		description: tech.description,
+		detail: tech.detail
+	}));
+	const techStack = await vscode.window.showQuickPick(techStackItems, {
+		canPickMany: true,
+		placeHolder: 'Select the technologies you want to use'
+	});
+
 	if (!techStack || techStack.length === 0) { return; }
 
-	const projectDetails: ProjectDetails = {name,desc,techStack};
+	const projectDetails: ProjectDetails = {
+		name, 
+		desc, 
+		techStack: techStack.map(tech => tech.label)
+	};
+
+	const userRepos = await fetchAllRepos();
+
+	if(userRepos && userRepos.length > 0) {
+
+		const repoNames = userRepos.map(repo => ({
+			label: repo.name,
+			description: repo.private ? '🔒 Private' : '🌎 Public',
+			detail: repo.description || 'No description'
+		}));
+
+		vscode.window.showQuickPick(repoNames, {
+			placeHolder: 'Select a repository',
+			canPickMany: true
+		});
+	}
 
 	try {
 		const fileStructure = await vscode.window.withProgress({

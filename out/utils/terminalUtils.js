@@ -37,7 +37,6 @@ const vscode = __importStar(require("vscode"));
 const child_process_1 = require("child_process");
 const util_1 = require("util");
 const path = __importStar(require("path"));
-const jsonc_parser_1 = require("jsonc-parser");
 const execAsync = (0, util_1.promisify)(child_process_1.exec);
 function executeCommand(command) {
     var _a;
@@ -132,57 +131,48 @@ function updateFilesInWorkspace(files, desc) {
     });
 }
 exports.updateFilesInWorkspace = updateFilesInWorkspace;
-function makeFileStructure(files) {
-    var _a;
+function makeFileStructure(fileStructure) {
     return __awaiter(this, void 0, void 0, function* () {
-        const workspaceFolder = (_a = vscode.workspace.workspaceFolders) === null || _a === void 0 ? void 0 : _a[0];
-        if (!workspaceFolder) {
-            throw new Error("No open project folder found.");
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            vscode.window.showErrorMessage("Cannot create project: Please open a folder or workspace first.");
+            return;
         }
-        const rootUri = workspaceFolder.uri;
+        const workspaceRootUri = workspaceFolders[0].uri;
         yield vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: "Creating your new project...",
+            title: "Building your project...",
             cancellable: false
         }, (progress) => __awaiter(this, void 0, void 0, function* () {
             try {
-                progress.report({ message: "Generating files and folders..." });
-                const createdDirs = new Set();
-                for (const file of files) {
-                    const fileUri = vscode.Uri.joinPath(rootUri, file.fullPath);
-                    const dirUri = vscode.Uri.file(path.dirname(fileUri.fsPath));
-                    if (!createdDirs.has(dirUri.fsPath)) {
-                        yield vscode.workspace.fs.createDirectory(dirUri);
-                        createdDirs.add(dirUri.fsPath);
-                    }
-                    let contentToWrite = file.content;
-                    // If the file is package.json, ensure its content is valid and formatted JSON
-                    if (path.basename(file.fullPath) === 'package.json') {
-                        try {
-                            const parsedJson = (0, jsonc_parser_1.parse)(contentToWrite);
-                            contentToWrite = JSON.stringify(parsedJson, null, 2);
+                function create(currentUri, structure) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        for (const [name, content] of Object.entries(structure)) {
+                            const newUri = vscode.Uri.joinPath(currentUri, name);
+                            if (typeof content === 'string') {
+                                progress.report({ message: `Creating file: ${name}` });
+                                const fileContent = Buffer.from(content, 'utf8');
+                                yield vscode.workspace.fs.writeFile(newUri, fileContent);
+                            }
+                            else if (typeof content === 'object' && content !== null) {
+                                progress.report({ message: `Creating directory: ${name}/` });
+                                yield vscode.workspace.fs.createDirectory(newUri);
+                                yield create(newUri, content);
+                            }
                         }
-                        catch (e) {
-                            console.warn(`Could not parse package.json content for ${file.fullPath}, writing as is.`);
-                        }
-                    }
-                    const contentBytes = new TextEncoder().encode(contentToWrite);
-                    yield vscode.workspace.fs.writeFile(fileUri, contentBytes);
+                    });
                 }
+                yield create(workspaceRootUri, fileStructure);
                 progress.report({ message: "Initializing Git repository..." });
                 yield executeCommand('git init');
-                const hasPackageJson = files.some(file => path.basename(file.fullPath) === 'package.json');
-                if (hasPackageJson) {
-                    progress.report({ message: "Installing dependencies (npm install)..." });
-                    yield executeCommand('npm install');
-                }
-                progress.report({ message: "Staging all files..." });
+                progress.report({ message: "Adding files to Git..." });
                 yield executeCommand('git add .');
-                vscode.window.showInformationMessage('Project scaffolding complete!');
+                vscode.window.showInformationMessage("✅ Project structure created successfully!");
             }
             catch (error) {
-                console.error('Failed to make file structure:', error);
-                vscode.window.showErrorMessage(`Project creation failed: ${error.message}`);
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`Failed to create project structure: ${errorMessage}`);
+                console.error(error);
             }
         }));
     });

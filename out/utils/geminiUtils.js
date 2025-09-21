@@ -39,6 +39,7 @@ exports.generateFileStructure = exports.suggestComment = exports.getCodeRefineme
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const dotenv = __importStar(require("dotenv"));
 const path = __importStar(require("path"));
+const jsonc_parser_1 = require("jsonc-parser");
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
 let key = () => {
@@ -119,11 +120,11 @@ function suggestComment(files) {
     });
 }
 exports.suggestComment = suggestComment;
-function generateFileStructure(details) {
+function generateFileStructure(projectDetails) {
     var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
         const apiKey = key();
-        const prompt = fileListPrompt(details);
+        const prompt = generateFileStructurePrompt(projectDetails);
         const response = yield (0, node_fetch_1.default)(GEMINI_URL, {
             method: 'POST',
             headers: {
@@ -131,10 +132,7 @@ function generateFileStructure(details) {
                 'X-goog-api-key': apiKey,
             },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    maxOutputTokens: 8192,
-                },
+                contents: [{ parts: [{ text: prompt }] }]
             }),
         });
         if (!response.ok) {
@@ -142,72 +140,115 @@ function generateFileStructure(details) {
             throw new Error(`Gemini API request failed with status ${response.status}: ${errorBody}`);
         }
         const data = yield response.json();
-        const responseText = (_e = (_d = (_c = (_b = (_a = data === null || data === void 0 ? void 0 : data.candidates) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.text;
-        if (!responseText) {
+        const text = (_e = (_d = (_c = (_b = (_a = data === null || data === void 0 ? void 0 : data.candidates) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.text;
+        if (!text) {
             throw new Error('No valid content found in Gemini API response.');
         }
-        return responseText
-            .trim()
-            .split('\n')
-            .map((line) => {
-            const [fullPath, ...contentParts] = line.split(':::');
-            let content = contentParts.join(':::');
-            // --- ADD THIS LINE ---
-            // Replace the <NEWLINE> token with the actual newline character.
-            content = content.replace(/<NEWLINE>/g, '\n');
-            return { fullPath: fullPath.trim(), content: content.trim() };
-        })
-            .filter((file) => file.fullPath);
+        const errors = [];
+        const parsedJson = (0, jsonc_parser_1.parse)(text, errors);
+        if (errors.length > 0) {
+            console.warn("JSONC parser encountered recoverable errors:", errors);
+        }
+        if (parsedJson === undefined) {
+            throw new Error("Failed to parse the JSON structure from the API response.");
+        }
+        return parsedJson;
     });
 }
 exports.generateFileStructure = generateFileStructure;
-const fileListPrompt = (details) => (`You are a project scaffolding assistant. Your task is to generate the full contents of all files for a new software project.
-
-Project Name: ${details.name}
-Project Description: ${details.desc}
-Tech Stack: ${details.techStack.join(', ')}
-
-**RESPONSE INSTRUCTIONS:**
-1.  Generate a list of all necessary files.
-2.  Each line in your response must represent one file.
-3.  Each line **MUST** be in the format: \`filePath:::fileContent\`.
-4.  **CRITICAL**: For multi-line file content, you **MUST** replace every newline character with the special token "<NEWLINE>".
-5.  Do **NOT** respond in JSON format. Respond in the custom plain text format described.
-6.  For \`package.json\`, provide a valid JSON object as the content.
-
-**EXAMPLE:**
-./src/index.js:::import React from 'react';<NEWLINE>console.log("Hello, World!");
-./package.json:::{ "name": "${details.name}", "version": "1.0.0" }
+const generateFileStructurePrompt = (details) => (`You are an automated file structure generation service. Your sole purpose is to output a raw JSON object that represents the complete file and directory structure for a new software project, including placeholder code content for key files.
+## Project Details
+- **Project Name:** ${details.name}
+- **Project Description:** ${details.desc}
+- **Tech Stack:** ${details.techStack.join(', ')}
+## Response Format Instructions
+Generate a JSON object representing the project's file structure.
+-   Keys must be strings representing file or directory names.
+-   Values for files must be strings containing plausible source code or content.
+-   Values for directories must be nested JSON objects following the same rules.
+### CRITICAL RULES FOR OUTPUT
+1.  **JSON ONLY:** Your entire response must be a single, raw JSON object.
+2.  **NO MARKDOWN:** Do not wrap the JSON in markdown code blocks like json.
+3.  **NO EXTRA TEXT:** Do not include ANY text, headers, footers, explanations, or conversational filler before or after the JSON object. Your response must start with { and end with }.
 `);
-const codeRefinementPrompt = (files) => (`
-You are an expert code reviewer and senior software engineer. Your task is to analyze code changes, understand the developer's intent, and provide a refined, more efficient, and robust version of the code. You must also provide a concise, high-level description of what each file does.
-
-Analyze the following array of file data. For each file, use the 'diff' to understand the intended changes and then refine the entire 'code' to be more efficient, robust, and aligned with best practices.
-
-Constraints:
-1. The refined code should achieve the same goal as the original intent but with better implementation.
-2. The refined code should have minimal comments.
-3. The description ('desc') should be a high-level summary of the file's purpose and usage, not a line-by-line explanation.
-
-Your response MUST be a valid JSON array of objects, where each object contains the following keys: "name", "desc", and "code".
-
+const codeRefinementPrompt = (files) => (`You are an expert AI code reviewer, acting as a senior software engineer. Your purpose is to meticulously analyze code changes, deduce the developer's intent, and then produce a refined, production-ready version of the code. You will also provide a concise, high-level summary of each file's role.
+## Your Task
+For each file in the input array, perform the following steps:
+Understand the Change: Analyze the diff to understand the developer's specific intent.
+Apply and Refine: First, mentally apply the intended changes from the diff to the original code. Then, refine the entire resulting file to improve its efficiency, readability, robustness, and adherence to modern best practices.
+Describe the File: Write a high-level summary (desc) explaining the file's primary purpose and how it's used within a larger project.
+## Project Context
+Tech Stack/Framework: [Specify a tech stack, e.g., TypeScript, React, Node.js, Express]
+Coding Standards: [Specify a standard, e.g., Airbnb Style Guide, StandardJS]
+## Constraints & Formatting Rules
+Refinement: The refined code must achieve the same goal as the developer's intent but with superior implementation (e.g., using better algorithms, idiomatic language features, or improved error handling).
+Documentation: Adhere to modern documentation standards (e.g., JSDoc/TSDoc for functions). Add inline comments only for complex or non-obvious logic. Avoid redundant comments.
+Description: The desc must be a high-level summary, not a line-by-line explanation. Keep it under 40 words.
+Strict JSON Output: Your entire response MUST be a single, raw JSON array of objects.
+Do not wrap the JSON in markdown blocks (e.g., \`\`\`json).
+Do not include any introductory text, explanations, or conversational filler.
+Your response must start with [ and end with ].
+## Example
+Input Data Example:
+JSON
+[
+  {
+    "name": "utils/format.js",
+    "code": "function transformToUpperCase(arr) { var result = []; for (var i = 0; i < arr.length; i++) { result.push(arr[i].toUpperCase()); } return result; }",
+    "diff": "--- a/utils/format.js\n+++ b/utils/format.js\n@@ -1,1 +1,1 @@\n-function transformToUpperCase(arr) { var result = []; for (var i = 0; i < arr.length; i++) { result.push(arr[i].toUpperCase()); } return result; }\n+const transformToUpperCase = (arr) => { let result = []; for (let i = 0; i < arr.length; i++) { result.push(arr[i].toUpperCase()); } return result; }"
+  }
+]
+Expected Output Example:
+JSON
+[
+  {
+    "name": "utils/format.js",
+    "desc": "A utility module that provides helper functions for string transformations, such as converting an array of strings to uppercase.",
+    "code": "/**\n * Transforms an array of strings to uppercase.\n * @param {string[]} arr The input array of strings.\n * @returns {string[]} The new array with uppercase strings.\n */\nexport const transformToUpperCase = (arr) => arr.map(item => item.toUpperCase());"
+  }
+]
+## Final Prompt for API Call
+(Provide the actual input data below this line)
 Input Data:
 \`\`\`json
 ${JSON.stringify(files, null, 2)}
 \`\`\`
 `);
 const conventionalCommitPrompt = (files) => (`
-You are an expert at writing concise and informative git commit messages. Analyze the following git diffs and generate a single, conventional commit message that summarizes all the changes.
-
-Constraints:
-- The message must follow the Conventional Commits specification.
-- The format must be <type>(<scope>): <subject>.
-- The <scope> should be a short word describing the area of the codebase affected (e.g., 'api', 'ui', 'utils').
-- The entire message must be less than 20 words.
-- Do not include a body or footer.
-- Your response must be only the commit message string, with no extra text or markdown.
-
-Here are the diffs:
+You are an expert AI assistant that writes concise, conventional git commit messages. Your task is to analyze a set of git diffs, determine the overarching intent of the changes, and generate a single, high-quality commit message that summarizes them.
+## Your Task
+Analyze Intent: First, determine the primary goal that unifies all the changes. Are they fixing a bug, adding a new feature, or refactoring code?
+Determine Type & Scope: Based on the intent and the file paths, select the most appropriate commit type and scope.
+Craft Subject: Write a concise subject line that describes the change in the imperative mood (e.g., "add," "fix," "update," not "added," "fixes," or "updates").
+## Conventional Commit Rule
+Format: Your message must strictly follow the <type>(<scope>): <subject> format.
+Type: Choose the <type> from this list: feat, fix, chore, refactor, docs, style, test, build, ci, perf.
+Scope: Infer a logical, singular <scope> from the affected file paths (e.g., api, auth, ui, payment). The scope is optional if the changes are widespread and defy a single descriptor.
+Subject:
+Keep the subject line under 50 characters.
+Start with a lowercase letter.
+Do not end the subject with a period.
+## Example
+Input Diffs Example:
+JSON
+[
+  {
+    "name": "src/components/UserProfile.js",
+    "diff": "--- a/src/components/UserProfile.js\n+++ b/src/components/UserProfile.js\n@@ -10,1 +10,1 @@\n-    <p>Loading...</p>\n+    <p>Loading user data...</p>"
+  },
+  {
+    "name": "src/api/users.js",
+    "diff": "--- a/src/api/users.js\n+++ b/src/api/users.js\n@@ -5,3 +5,4 @@\n-  // TODO: Add error handling\n+  if (!response.ok) {\n+    throw new Error('Failed to fetch user');\n+  }"
+  }
+]
+Expected Output Example:
+fix(api): add error handling to user fetch
+## Strict Output Format
+Your response MUST be only the commit message string.
+Do not include any extra text, explanations, or markdown formatting.
+## Final Prompt for API Call
+(Provide the actual input data below this line)
+Input Diffs:
 \`\`\`json
 ${JSON.stringify(files.map(f => ({ name: f.name, diff: f.diff })), null, 2)}
 \`\`\`

@@ -37,6 +37,8 @@ const vscode = __importStar(require("vscode"));
 const gitUtils_1 = require("./utils/gitUtils");
 const geminiUtils_1 = require("./utils/geminiUtils");
 const terminalUtils_1 = require("./utils/terminalUtils");
+const githubUtils_1 = require("./utils/githubUtils");
+const techStackData_1 = require("./assets/techStackData");
 function initializeProject() {
     return __awaiter(this, void 0, void 0, function* () {
         const name = yield vscode.window.showInputBox({
@@ -56,14 +58,35 @@ function initializeProject() {
         if (desc === undefined) {
             return;
         }
-        const techStack = yield vscode.window.showQuickPick(['React', 'Vue', 'Svelte', 'TypeScript', 'Tailwind CSS', 'Node.js', 'Express'], {
+        const techStackItems = techStackData_1.techStackData.map(tech => ({
+            label: tech.label,
+            description: tech.description,
+            detail: tech.detail
+        }));
+        const techStack = yield vscode.window.showQuickPick(techStackItems, {
             canPickMany: true,
             placeHolder: 'Select the technologies you want to use'
         });
         if (!techStack || techStack.length === 0) {
             return;
         }
-        const projectDetails = { name, desc, techStack };
+        const projectDetails = {
+            name,
+            desc,
+            techStack: techStack.map(tech => tech.label)
+        };
+        const userRepos = yield (0, githubUtils_1.fetchAllRepos)();
+        if (userRepos && userRepos.length > 0) {
+            const repoNames = userRepos.map(repo => ({
+                label: repo.name,
+                description: repo.private ? '🔒 Private' : '🌎 Public',
+                detail: repo.description || 'No description'
+            }));
+            vscode.window.showQuickPick(repoNames, {
+                placeHolder: 'Select a repository',
+                canPickMany: true
+            });
+        }
         try {
             const fileStructure = yield vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
