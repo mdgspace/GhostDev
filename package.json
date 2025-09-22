@@ -44,6 +44,7 @@
     "node-fetch": "^3.3.2"
   },
   "extensionDependencies": [
-    "vscode.git"
+    "vscode.git",
+    "vscode.github-authentication"
   ]
 }

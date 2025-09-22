@@ -34,13 +34,9 @@ async function initializeProject() {
 
 	if (!techStack || techStack.length === 0) { return; }
 
-	const projectDetails: ProjectDetails = {
-		name, 
-		desc, 
-		techStack: techStack.map(tech => tech.label)
-	};
-
 	const userRepos = await fetchAllRepos();
+
+	let refRepos: string[] = [];
 
 	if(userRepos && userRepos.length > 0) {
 
@@ -50,11 +46,23 @@ async function initializeProject() {
 			detail: repo.description || 'No description'
 		}));
 
-		vscode.window.showQuickPick(repoNames, {
-			placeHolder: 'Select a repository',
+		const selectedRepos = await vscode.window.showQuickPick(repoNames, {
+			placeHolder: 'Select reference repos',
 			canPickMany: true
 		});
+
+		if(selectedRepos && selectedRepos.length>0) {
+			refRepos = selectedRepos.map(repo => repo.label)
+		}
 	}
+
+	const projectDetails: ProjectDetails = {
+		name, 
+		desc, 
+		techStack: techStack.map(tech => tech.label),
+		refRepos
+	};
+
 
 	try {
 		const fileStructure = await vscode.window.withProgress({

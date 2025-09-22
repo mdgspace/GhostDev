@@ -70,23 +70,28 @@ function initializeProject() {
         if (!techStack || techStack.length === 0) {
             return;
         }
-        const projectDetails = {
-            name,
-            desc,
-            techStack: techStack.map(tech => tech.label)
-        };
         const userRepos = yield (0, githubUtils_1.fetchAllRepos)();
+        let refRepos = [];
         if (userRepos && userRepos.length > 0) {
             const repoNames = userRepos.map(repo => ({
                 label: repo.name,
                 description: repo.private ? '🔒 Private' : '🌎 Public',
                 detail: repo.description || 'No description'
             }));
-            vscode.window.showQuickPick(repoNames, {
-                placeHolder: 'Select a repository',
+            const selectedRepos = yield vscode.window.showQuickPick(repoNames, {
+                placeHolder: 'Select reference repos',
                 canPickMany: true
             });
+            if (selectedRepos && selectedRepos.length > 0) {
+                refRepos = selectedRepos.map(repo => repo.label);
+            }
         }
+        const projectDetails = {
+            name,
+            desc,
+            techStack: techStack.map(tech => tech.label),
+            refRepos
+        };
         try {
             const fileStructure = yield vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,

@@ -40,6 +40,7 @@ const node_fetch_1 = __importDefault(require("node-fetch"));
 const dotenv = __importStar(require("dotenv"));
 const path = __importStar(require("path"));
 const jsonc_parser_1 = require("jsonc-parser");
+const githubUtils_1 = require("./githubUtils");
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
 let key = () => {
@@ -124,7 +125,8 @@ function generateFileStructure(projectDetails) {
     var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
         const apiKey = key();
-        const prompt = generateFileStructurePrompt(projectDetails);
+        const persona = yield (0, githubUtils_1.fetchRepoPersona)(projectDetails.refRepos);
+        const prompt = generateFileStructurePrompt(projectDetails, JSON.stringify(persona));
         const response = yield (0, node_fetch_1.default)(GEMINI_URL, {
             method: 'POST',
             headers: {
@@ -156,19 +158,33 @@ function generateFileStructure(projectDetails) {
     });
 }
 exports.generateFileStructure = generateFileStructure;
-const generateFileStructurePrompt = (details) => (`You are an automated file structure generation service. Your sole purpose is to output a raw JSON object that represents the complete file and directory structure for a new software project, including placeholder code content for key files.
+const generateFileStructurePrompt = (details, persona) => (`You are an automated file structure generation service. Your sole purpose is to output a raw JSON object that represents the complete file and directory structure for a new software project, including placeholder code content for key files.
+
 ## Project Details
 - **Project Name:** ${details.name}
 - **Project Description:** ${details.desc}
 - **Tech Stack:** ${details.techStack.join(', ')}
+
+## User Persona & Coding Style
+The following JSON object describes the user's established coding style and conventions. All generated file names, directory structures, and placeholder code **must** strictly adhere to these rules.
+
+**Instructions for applying the persona:**
+- **File Naming:** Use the naming convention specified in the persona (e.g., kebab-case, camelCase).
+- **Code Style:** All generated code snippets must match the user's indentation, string quotation preference, and other coding style rules.
+- **Directory Structure:** Organize the source layout according to the user's preferred pattern (e.g., feature-based).
+
+**Persona Data:**
+${persona}
+
 ## Response Format Instructions
 Generate a JSON object representing the project's file structure.
--   Keys must be strings representing file or directory names.
--   Values for files must be strings containing plausible source code or content.
+-   Keys must be strings representing file or directory names that conform to the user persona.
+-   Values for files must be strings containing plausible source code or content, written in the user's preferred style.
 -   Values for directories must be nested JSON objects following the same rules.
+
 ### CRITICAL RULES FOR OUTPUT
 1.  **JSON ONLY:** Your entire response must be a single, raw JSON object.
-2.  **NO MARKDOWN:** Do not wrap the JSON in markdown code blocks like json.
+2.  **NO MARKDOWN:** Do not wrap the JSON in markdown code blocks like \`\`\`json.
 3.  **NO EXTRA TEXT:** Do not include ANY text, headers, footers, explanations, or conversational filler before or after the JSON object. Your response must start with { and end with }.
 `);
 const codeRefinementPrompt = (files) => (`You are an expert AI code reviewer, acting as a senior software engineer. Your purpose is to meticulously analyze code changes, deduce the developer's intent, and then produce a refined, production-ready version of the code. You will also provide a concise, high-level summary of each file's role.
