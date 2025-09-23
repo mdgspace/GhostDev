@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { setProjectPersona } from './geminiUtils';
 
 interface GitHubRepo {
   name: string;
@@ -207,6 +208,9 @@ export async function fetchRepoPersona(repoNames: string[]): Promise<any> {
         }
       }
     };
+
+    setProjectPersona(persona);
+
     return persona;
 
   } catch (error) {
@@ -256,11 +260,7 @@ export async function showPersonaSummary(persona: UserPersona): Promise<void> {
     }
 
     const { metadata, codingStyle, repositoryInsights, fileStructure } = persona;
-
-    // Helper to capitalize the first letter of a string
     const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-    // Build the message line by line for clarity and structure
     const summaryLines: string[] = [
         `👤 Coding Persona for: ${metadata.username}`,
         '---',
@@ -281,13 +281,9 @@ export async function showPersonaSummary(persona: UserPersona): Promise<void> {
 
     const message = summaryLines.join('\n');
     const viewJsonButton: vscode.MessageItem = { title: "View Full Details" };
-
-    // Show the information message with a modal dialog for focus
     const selection = await vscode.window.showInformationMessage(message, { modal: true }, viewJsonButton);
-
-    // If the user clicks the button, open the full persona in a new JSON document
     if (selection === viewJsonButton) {
-        const fullPersonaJson = JSON.stringify(persona, null, 2); // Pretty-print the JSON
+        const fullPersonaJson = JSON.stringify(persona, null, 2);
         const doc = await vscode.workspace.openTextDocument({
             content: fullPersonaJson,
             language: 'json'

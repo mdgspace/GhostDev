@@ -35,14 +35,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateFileStructure = exports.suggestComment = exports.getCodeRefinements = void 0;
+exports.generateFileStructure = exports.suggestComment = exports.getCodeRefinements = exports.setProjectPersona = void 0;
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const dotenv = __importStar(require("dotenv"));
 const path = __importStar(require("path"));
 const jsonc_parser_1 = require("jsonc-parser");
 const githubUtils_1 = require("./githubUtils");
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+let projectPersona;
+let setProjectPersona = (persona) => {
+    projectPersona = persona;
+};
+exports.setProjectPersona = setProjectPersona;
+let url = () => {
+    const geminiUrl = process.env.GEMINI_URL;
+    if (!geminiUrl) {
+        throw new Error('Gemini URL not set in .env file');
+    }
+    return geminiUrl;
+};
 let key = () => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -54,11 +65,12 @@ function getCodeRefinements(files) {
     var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
         const apiKey = key();
+        const geminiUrl = url();
         if (files.length === 0) {
             throw new Error('No files provided for refinement.');
         }
         const prompt = codeRefinementPrompt(files);
-        const response = yield (0, node_fetch_1.default)(GEMINI_URL, {
+        const response = yield (0, node_fetch_1.default)(geminiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -94,11 +106,12 @@ function suggestComment(files) {
     var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
         const apiKey = key();
+        const geminiUrl = url();
         if (files.length === 0) {
             throw new Error('No files provided to generate a commit message.');
         }
         const prompt = conventionalCommitPrompt(files);
-        const response = yield (0, node_fetch_1.default)(GEMINI_URL, {
+        const response = yield (0, node_fetch_1.default)(geminiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -125,9 +138,10 @@ function generateFileStructure(projectDetails) {
     var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
         const apiKey = key();
+        const geminiUrl = url();
         const persona = yield (0, githubUtils_1.fetchRepoPersona)(projectDetails.refRepos);
         const prompt = generateFileStructurePrompt(projectDetails, JSON.stringify(persona));
-        const response = yield (0, node_fetch_1.default)(GEMINI_URL, {
+        const response = yield (0, node_fetch_1.default)(geminiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -225,6 +239,8 @@ JSON
 ]
 ## Final Prompt for API Call
 (Provide the actual input data below this line)
+Persona Data:
+${projectPersona ? JSON.stringify(projectPersona) : ""}
 Input Data:
 \`\`\`json
 ${JSON.stringify(files, null, 2)}

@@ -7,8 +7,10 @@ import { fetchRepoPersona } from './githubUtils';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
-
+let projectPersona: any;
+export let setProjectPersona = (persona: any) => {
+    projectPersona = persona
+}
 export interface RefinedCode {
     name:string;
     desc: string;
@@ -22,6 +24,14 @@ export interface ProjectDetails {
     refRepos: string[];
 }
 
+let url = () => {
+    const geminiUrl = process.env.GEMINI_URL
+    if(!geminiUrl) {
+        throw new Error('Gemini URL not set in .env file')
+    }
+    return geminiUrl;
+}
+
 let key = () => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -32,11 +42,12 @@ let key = () => {
 
 export async function getCodeRefinements(files: GitDiffData[]): Promise<RefinedCode[]> {
     const apiKey = key();
+    const geminiUrl = url();
     if (files.length === 0) {
         throw new Error('No files provided for refinement.');
     }
     const prompt = codeRefinementPrompt(files);
-    const response = await fetch(GEMINI_URL, {
+    const response = await fetch(geminiUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -70,11 +81,12 @@ export async function getCodeRefinements(files: GitDiffData[]): Promise<RefinedC
 
 export async function suggestComment(files: GitDiffData[]): Promise<string> {
     const apiKey = key();
+    const geminiUrl = url();
     if (files.length === 0) {
         throw new Error('No files provided to generate a commit message.');
     }
     const prompt = conventionalCommitPrompt(files);
-    const response = await fetch(GEMINI_URL, {
+    const response = await fetch(geminiUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -102,12 +114,13 @@ export async function suggestComment(files: GitDiffData[]): Promise<string> {
 
 export async function generateFileStructure(projectDetails: ProjectDetails): Promise<any> {
     const apiKey = key();
+    const geminiUrl = url();
 
     const persona = await fetchRepoPersona(projectDetails.refRepos) as any;
 
     const prompt = generateFileStructurePrompt(projectDetails, JSON.stringify(persona));
 
-    const response = await fetch(GEMINI_URL, {
+    const response = await fetch(geminiUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -215,6 +228,8 @@ JSON
 ]
 ## Final Prompt for API Call
 (Provide the actual input data below this line)
+Persona Data:
+${projectPersona? JSON.stringify(projectPersona): ""}
 Input Data:
 \`\`\`json
 ${JSON.stringify(files, null, 2)}
