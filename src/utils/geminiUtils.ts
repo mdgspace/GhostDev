@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { GitDiffData } from './gitUtils';
 import { parse } from 'jsonc-parser';
 import { fetchRepoPersona } from './githubUtils';
@@ -173,16 +174,18 @@ async function generateFileStructurePrompt(details: ProjectDetails, persona: str
 }
 
 async function codeRefinementPrompt(files: GitDiffData[]): Promise<string> {
-    const promptTemplate = await getCustomPrompt('getCodeRefinements');
-    
-    const personaString = projectPersona ? JSON.stringify(projectPersona, null, 2) : "{}";
-    const filesJson = JSON.stringify(files, null, 2);
+	const promptTemplate = await getCustomPrompt('getCodeRefinements');
+	
+	const personaString = projectPersona ? JSON.stringify(projectPersona, null, 2) : "{}";
+	// Ensure files is an array before mapping
+	const filesArray = Array.isArray(files) ? files : [];
+	const filesJson = JSON.stringify(filesArray, null, 2);
 
-    const finalPrompt = promptTemplate
-        .replace('{{persona}}', personaString)
-        .replace('{{diffDataAsJson}}', filesJson);
-    
-    return finalPrompt;
+	const finalPrompt = promptTemplate
+		.replace('{{persona}}', personaString)
+		.replace('{{diffDataAsJson}}', filesJson);
+	
+	return finalPrompt;
 }
 
 async function conventionalCommitPrompt(files: GitDiffData[]): Promise<string> {
