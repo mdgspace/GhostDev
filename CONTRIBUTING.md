@@ -63,6 +63,3 @@ What about MAJOR release? just add `!` to the prefix, like `fix!: ` or `refactor
 Prefix that follows specification is not enough though. Remember that the title must be clear and descriptive with usage of [imperative mood](https://chris.beams.io/posts/git-commit/#imperative).
 
 Happy contributing :heart:
-
-## References
-This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/master/CONTRIBUTING.md).
