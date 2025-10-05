@@ -9,9 +9,8 @@ export interface GitDiffData {
 
 export async function openDifftool(): Promise<void> {
     try {
-        await executeCommand('git config --global diff.tool vscode');
-        const cmdConfig = 'git config --global difftool.vscode.cmd "code --wait --diff \\$LOCAL \\$REMOTE"';
-        await executeCommand(cmdConfig);
+        await executeCommand('git config --global diff.tool vscode-diff');
+        await executeCommand('git config --global difftool.vscode-diff.cmd "code --wait --diff $LOCAL $REMOTE"');
         await executeCommand('git config --global difftool.prompt false');
         await executeCommand('git difftool');
 

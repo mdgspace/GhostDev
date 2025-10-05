@@ -32,8 +32,6 @@ async function initializeProject() {
 		placeHolder: 'Select the technologies you want to use'
 	});
 
-	if (!techStack || techStack.length === 0) { return; }
-
 	const userRepos = await fetchAllRepos();
 
 	let refRepos: string[] = [];
@@ -46,20 +44,37 @@ async function initializeProject() {
 			detail: repo.description || 'No description'
 		}));
 
-		const selectedRepos = await vscode.window.showQuickPick(repoNames, {
-			placeHolder: 'Select reference repos',
-			canPickMany: true
-		});
+		refRepos = await new Promise<string[]>((resolve) => {
+			const quickPick = vscode.window.createQuickPick();
+			quickPick.items = repoNames;
+			quickPick.canSelectMany = true;
+			quickPick.placeholder = 'Select reference repos or type a new one and press Enter';
+			quickPick.title = 'Select Repositories';
 
-		if(selectedRepos && selectedRepos.length>0) {
-			refRepos = selectedRepos.map(repo => repo.label)
-		}
+			quickPick.onDidAccept(() => {
+				const selected = quickPick.selectedItems.map(item => item.label);
+				const customRepo = quickPick.value.trim();
+				if (customRepo && !selected.includes(customRepo)) {
+					selected.push(customRepo);
+				}
+				quickPick.hide();
+				resolve(selected);
+			});
+
+			quickPick.onDidHide(() => {
+				// If it was hidden without accepting, resolve with selected items so far
+				resolve(quickPick.selectedItems.map(item => item.label));
+				quickPick.dispose();
+			});
+
+			quickPick.show();
+		});
 	}
 
 	const projectDetails: ProjectDetails = {
 		name, 
 		desc, 
-		techStack: techStack.map(tech => tech.label),
+		techStack: techStack?techStack.map(tech => tech.label):[],
 		refRepos
 	};
 
