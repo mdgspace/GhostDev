@@ -72,20 +72,31 @@ export async function updateFilesInWorkspace(files: RefinedCode[], desc: Boolean
     if (!workspaceFolder) {
         throw new Error("No open project folder found. Cannot update files.");
     }
+
+    if (!Array.isArray(files)) {
+        console.error("updateFilesInWorkspace Error: The input 'files' is not an array. Received:", files);
+        throw new TypeError("An error occurred while preparing files for writing. The input data was not in the expected array format.");
+    }
+
     const rootUri = workspaceFolder.uri;
     try {
-        const updatePromises = files.map(async (file) => {
+        for (const file of files) {
+            if (!file || typeof file.name !== 'string' || typeof file.code !== 'string' || typeof file.desc !== 'string') {
+                console.warn("Skipping invalid file data object received from API:", file);
+                continue; // Skip this iteration and move to the next file.
+            }
+
             const fileUri = vscode.Uri.joinPath(rootUri, file.name);
             const formattedComment = formatDescComment(file.desc, file.name);
-            const newContent = desc? `${formattedComment}\n\n${file.code}`:file.code;
+            const newContent = desc ? `${formattedComment}\n\n${file.code}` : file.code;
             const contentBytes = new TextEncoder().encode(newContent);
             await vscode.workspace.fs.writeFile(fileUri, contentBytes);
-        });
-        await Promise.all(updatePromises);
+        }
+        
         vscode.window.showInformationMessage(`Successfully updated ${files.length} file(s).`);
     } catch (error: any) {
-        console.error('Failed to update files in workspace:', error);
-        throw new Error(`An error occurred while writing files: ${error.message}`);
+        console.error('Failed to update a file in the workspace:', error);
+        throw new Error(`An error occurred while writing a file: ${error.message}`);
     }
 }
 

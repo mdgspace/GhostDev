@@ -186,13 +186,23 @@ async function codeRefinementPrompt(files: GitDiffData[]): Promise<string> {
 }
 
 async function conventionalCommitPrompt(files: GitDiffData[]): Promise<string> {
+    if (!Array.isArray(files)) {
+        console.error("conventionalCommitPrompt Error: The input 'files' is not an array. Received:", files);
+        throw new TypeError("Input to conventionalCommitPrompt must be an array.");
+    }
+
     const promptTemplate = await getCustomPrompt('suggestComment');
 
-    const diffAsJson = JSON.stringify(
-        files.map(f => ({ name: f.name, diff: f.diff })), 
-        null, 
-        2
-    );
+    const filesForJson = [];
+
+    for (const file of files) {
+        filesForJson.push({ 
+            name: file.name, 
+            diff: file.diff 
+        });
+    }
+
+    const diffAsJson = JSON.stringify(filesForJson, null, 2);
 
     const finalPrompt = promptTemplate.replace('{{diffDataAsJson}}', diffAsJson);
 

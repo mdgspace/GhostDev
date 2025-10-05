@@ -9,9 +9,8 @@ export interface GitDiffData {
 
 export async function openDifftool(): Promise<void> {
     try {
-        await executeCommand('git config --global diff.tool vscode');
-        const cmdConfig = 'git config --global difftool.vscode.cmd "code --wait --diff \\$LOCAL \\$REMOTE"';
-        await executeCommand(cmdConfig);
+        await executeCommand('git config --global diff.tool vscode-diff');
+        await executeCommand('git config --global difftool.vscode-diff.cmd "code --wait --diff $LOCAL $REMOTE"');
         await executeCommand('git config --global difftool.prompt false');
         await executeCommand('git difftool');
 
@@ -20,12 +19,11 @@ export async function openDifftool(): Promise<void> {
         vscode.window.showErrorMessage(`Failed to open Git difftool: ${error.message}`);
     }
 }
-
 export async function getDiffData(): Promise<GitDiffData[]> {
     try {
         const changedFilesOutput = await executeCommand('git diff --staged --name-only');
         const allFilePaths = changedFilesOutput.trim().split('\n').filter(Boolean);
-        const filteredFilePaths = allFilePaths.filter(path => 
+        const filteredFilePaths = allFilePaths.filter(path =>
             !path.startsWith('node_modules/') && !path.startsWith('.vscode/')
         );
         if (filteredFilePaths.length === 0) {
@@ -37,7 +35,6 @@ export async function getDiffData(): Promise<GitDiffData[]> {
             return { name: filePath, diff, code };
         });
         return Promise.all(diffDataPromises);
-
     } catch (error: any) {
         console.error('An error occurred while getting git diff data:', error);
         vscode.window.showErrorMessage(`Failed to get Git diff data: ${error.message}`);

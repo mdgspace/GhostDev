@@ -38,9 +38,8 @@ const terminalUtils_1 = require("./terminalUtils");
 function openDifftool() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield (0, terminalUtils_1.executeCommand)('git config --global diff.tool vscode');
-            const cmdConfig = 'git config --global difftool.vscode.cmd "code --wait --diff \\$LOCAL \\$REMOTE"';
-            yield (0, terminalUtils_1.executeCommand)(cmdConfig);
+            yield (0, terminalUtils_1.executeCommand)('git config --global diff.tool vscode-diff');
+            yield (0, terminalUtils_1.executeCommand)('git config --global difftool.vscode-diff.cmd "code --wait --diff $LOCAL $REMOTE"');
             yield (0, terminalUtils_1.executeCommand)('git config --global difftool.prompt false');
             yield (0, terminalUtils_1.executeCommand)('git difftool');
         }

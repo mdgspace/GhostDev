@@ -176,9 +176,8 @@ function generateFileStructure(projectDetails) {
 exports.generateFileStructure = generateFileStructure;
 function generateFileStructurePrompt(details, persona) {
     return __awaiter(this, void 0, void 0, function* () {
-        // 1. Fetch the custom prompt template from .ghostdev/prompts.json or get the default.
+        //Fetch the custom prompt template from .ghostdev/prompts.json or get the default.
         const promptTemplate = yield (0, promptUtils_1.getCustomPrompt)('generateFileStructure');
-        // 2. Inject the project data into the template's placeholders.
         const finalPrompt = promptTemplate
             .replace('{{projectName}}', details.name)
             .replace('{{projectDescription}}', details.desc)
@@ -189,66 +188,30 @@ function generateFileStructurePrompt(details, persona) {
 }
 function codeRefinementPrompt(files) {
     return __awaiter(this, void 0, void 0, function* () {
-        // 1. Fetch the custom prompt template
         const promptTemplate = yield (0, promptUtils_1.getCustomPrompt)('getCodeRefinements');
-        // 2. Use the globally set persona
         const personaString = projectPersona ? JSON.stringify(projectPersona, null, 2) : "{}";
         const filesJson = JSON.stringify(files, null, 2);
-        // 3. Inject data into the template
         const finalPrompt = promptTemplate
             .replace('{{persona}}', personaString)
             .replace('{{diffDataAsJson}}', filesJson);
         return finalPrompt;
     });
 }
-// const conventionalCommitPrompt = (files: GitDiffData[]): string => (
-// `
-// You are an expert AI assistant that writes concise, conventional git commit messages. Your task is to analyze a set of git diffs, determine the overarching intent of the changes, and generate a single, high-quality commit message that summarizes them.
-// ## Your Task
-// Analyze Intent: First, determine the primary goal that unifies all the changes. Are they fixing a bug, adding a new feature, or refactoring code?
-// Determine Type & Scope: Based on the intent and the file paths, select the most appropriate commit type and scope.
-// Craft Subject: Write a concise subject line that describes the change in the imperative mood (e.g., "add," "fix," "update," not "added," "fixes," or "updates").
-// ## Conventional Commit Rule
-// Format: Your message must strictly follow the <type>(<scope>): <subject> format.
-// Type: Choose the <type> from this list: feat, fix, chore, refactor, docs, style, test, build, ci, perf.
-// Scope: Infer a logical, singular <scope> from the affected file paths (e.g., api, auth, ui, payment). The scope is optional if the changes are widespread and defy a single descriptor.
-// Subject:
-// Keep the subject line under 50 characters.
-// Start with a lowercase letter.
-// Do not end the subject with a period.
-// ## Example
-// Input Diffs Example:
-// JSON
-// [
-//   {
-//     "name": "src/components/UserProfile.js",
-//     "diff": "--- a/src/components/UserProfile.js\n+++ b/src/components/UserProfile.js\n@@ -10,1 +10,1 @@\n-    <p>Loading...</p>\n+    <p>Loading user data...</p>"
-//   },
-//   {
-//     "name": "src/api/users.js",
-//     "diff": "--- a/src/api/users.js\n+++ b/src/api/users.js\n@@ -5,3 +5,4 @@\n-  // TODO: Add error handling\n+  if (!response.ok) {\n+    throw new Error('Failed to fetch user');\n+  }"
-//   }
-// ]
-// Expected Output Example:
-// fix(api): add error handling to user fetch
-// ## Strict Output Format
-// Your response MUST be only the commit message string.
-// Do not include any extra text, explanations, or markdown formatting.
-// ## Final Prompt for API Call
-// (Provide the actual input data below this line)
-// Input Diffs:
-// \`\`\`json
-// ${JSON.stringify(files.map(f => ({ name: f.name, diff: f.diff })), null, 2)}
-// \`\`\`
-// `
-// );
 function conventionalCommitPrompt(files) {
     return __awaiter(this, void 0, void 0, function* () {
-        // 1. Fetch the custom prompt template from .ghostdev/prompts.json or get the default.
+        if (!Array.isArray(files)) {
+            console.error("conventionalCommitPrompt Error: The input 'files' is not an array. Received:", files);
+            throw new TypeError("Input to conventionalCommitPrompt must be an array.");
+        }
         const promptTemplate = yield (0, promptUtils_1.getCustomPrompt)('suggestComment');
-        // 2. Prepare the data in the exact JSON format the prompt expects.
-        const diffAsJson = JSON.stringify(files.map(f => ({ name: f.name, diff: f.diff })), null, 2);
-        // 3. Inject the JSON data into the template's placeholder.
+        const filesForJson = [];
+        for (const file of files) {
+            filesForJson.push({
+                name: file.name,
+                diff: file.diff
+            });
+        }
+        const diffAsJson = JSON.stringify(filesForJson, null, 2);
         const finalPrompt = promptTemplate.replace('{{diffDataAsJson}}', diffAsJson);
         return finalPrompt;
     });
