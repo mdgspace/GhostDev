@@ -1,4 +1,4 @@
-# Contributing to AsyncAPI
+# Contributing to GhostDev
 We love your input! We want to make contributing to this project as easy and transparent as possible.
 
 ## Summary of the contribution flow
