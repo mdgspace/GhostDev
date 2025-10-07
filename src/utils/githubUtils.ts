@@ -124,7 +124,6 @@ function getDominantKey(obj: { [key: string]: number }): string {
 }
 
 export async function fetchRepoPersona(repoNames: string[]): Promise<any> {
-  vscode.window.showInformationMessage(repoNames.toString())
   try {
     const session = await vscode.authentication.getSession('github', ['repo'], { createIfNone: true });
     if (!session) {

@@ -11,6 +11,7 @@ GhostDev is not another "vibe coding" tool. It's a sophisticated code assistant 
 ## 🎯 Key Features
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": { "primaryColor": "#ffffff", "edgeLabelBackground":"#ffffff", "tertiaryColor": "#ffffff", "secondaryColor": "#ffffff", "primaryBorderColor":"#000000", "lineColor":"#000000", "textColor":"#000000"}}}%%
 mindmap
   root((GhostDev))
     Project Setup
@@ -26,59 +27,11 @@ mindmap
     Smart Code Refinement
       Git Diff Tracking
       Automated Suggestions
-      Accept/Reject/Modify
+      Accept / Reject / Modify
     Customization
       Custom Prompts
       Prompt Configuration
       Fine-tuned Control
-```
-
----
-
-## 🏗️ System Architecture
-
-```mermaid
-graph TB
-    subgraph "User Interaction Layer"
-        A[VS Code Extension UI] --> B[Project Configuration]
-        A --> C[File Watcher]
-        A --> D[Git Integration]
-    end
-    
-    subgraph "Core Processing"
-        B --> E[GitHub API Client]
-        E --> F[Repository Fetcher]
-        F --> G[Context Builder]
-        
-        C --> H[Git Diff Tracker]
-        H --> I[Change Analyzer]
-        
-        D --> J[Commit Monitor]
-        J --> H
-    end
-    
-    subgraph "AI Engine"
-        G --> K[Gemini API]
-        I --> K
-        L[Custom Prompts] --> K
-        
-        K --> M[Structure Generator]
-        K --> N[Code Refinement Engine]
-        K --> O[Comment Suggester]
-    end
-    
-    subgraph "Output Layer"
-        M --> P[Directory Creator]
-        N --> Q[Suggestion Panel]
-        O --> Q
-        
-        Q --> R[Accept/Reject/Modify]
-        R --> S[Code Updater]
-    end
-    
-    style K fill:#FF6B6B
-    style A fill:#4ECDC4
-    style Q fill:#95E1D3
 ```
 
 ---
@@ -135,54 +88,6 @@ flowchart TD
     AE --> O
     AF --> O
     
-    style K fill:#FFD93D
-    style Y fill:#FFD93D
-    style Z fill:#FF6B6B
-    style S fill:#6BCB77
-```
-
----
-
-## 🔄 Extension Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> Inactive
-    Inactive --> Initializing: Extension Loaded
-    
-    Initializing --> ProjectSetup: User Activates
-    ProjectSetup --> ConfiguringGitHub: Connects GitHub
-    ConfiguringGitHub --> SelectingRepos: Auth Success
-    SelectingRepos --> GeneratingStructure: User Confirms
-    
-    GeneratingStructure --> Monitoring: Structure Created
-    
-    Monitoring --> AnalyzingChanges: Git Add Detected
-    AnalyzingChanges --> GeneratingSuggestions: Diff Calculated
-    GeneratingSuggestions --> AwaitingUserAction: Suggestions Ready
-    
-    AwaitingUserAction --> ApplyingChanges: Accept
-    AwaitingUserAction --> Monitoring: Reject
-    AwaitingUserAction --> ModifyingSuggestions: Modify
-    
-    ModifyingSuggestions --> ApplyingChanges: Confirm
-    ApplyingChanges --> Monitoring: Changes Applied
-    
-    Monitoring --> [*]: Extension Closed
-```
-
----
-
-## 🎨 Feature Breakdown
-
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'pieStrokeWidth': '2px'}}}%%
-pie title GhostDev Features Distribution
-    "Project Initialization" : 25
-    "Code Generation" : 20
-    "Git Integration" : 30
-    "AI Suggestions" : 20
-    "Customization" : 5
 ```
 
 ---
@@ -233,67 +138,6 @@ sequenceDiagram
 
 ---
 
-## 🛠️ Component Architecture
-
-```mermaid
-graph LR
-    subgraph "Extension Core"
-        A[Extension.ts<br/>Entry Point]
-        B[Command Handler]
-        C[Configuration Manager]
-    end
-    
-    subgraph "GitHub Integration"
-        D[Auth Provider]
-        E[Repository Service]
-        F[API Client]
-    end
-    
-    subgraph "Git Operations"
-        G[File Watcher]
-        H[Diff Calculator]
-        I[Stage Monitor]
-    end
-    
-    subgraph "AI Services"
-        J[Prompt Builder]
-        K[Gemini Client]
-        L[Response Parser]
-    end
-    
-    subgraph "UI Components"
-        M[Webview Provider]
-        N[Suggestion Panel]
-        O[Quick Pick Menus]
-    end
-    
-    A --> B
-    A --> C
-    B --> D
-    B --> G
-    
-    D --> E
-    E --> F
-    
-    G --> H
-    H --> I
-    
-    I --> J
-    C --> J
-    J --> K
-    K --> L
-    
-    L --> M
-    M --> N
-    B --> O
-    
-    style A fill:#FF6B6B
-    style K fill:#FFD93D
-    style N fill:#95E1D3
-```
-
----
-
 ## ⚙️ Setup Instructions
 
 ### Prerequisites
@@ -303,27 +147,6 @@ graph LR
 - Gemini API key
 
 ### Step-by-Step Setup
-
-```mermaid
-graph TD
-    A[Clone Repository] --> B[Step 1: Create launch.json]
-    B --> C[Step 2: Install Dependencies]
-    C --> D[Step 3: Launch Extension]
-    
-    B --> B1[Create .vscode folder]
-    B1 --> B2[Add launch.json configuration]
-    
-    C --> C1[Run npm install]
-    C1 --> C2[Wait for dependencies]
-    
-    D --> D1[Open extension.ts]
-    D1 --> D2[Press F5]
-    D2 --> D3[Extension Development Host Opens]
-    
-    style B fill:#4ECDC4
-    style C fill:#95E1D3
-    style D fill:#6BCB77
-```
 
 #### **Step 1: Create Launch Configuration**
 
@@ -378,115 +201,59 @@ npm install
 
 ## 🎯 Custom Prompts Configuration
 
-GhostDev supports custom prompts through a configuration file located at `.ghostdev/prompts.json` in your project root.
+You can override **GhostDev's default behavior** by creating a custom prompts file at  
+`.ghostdev/prompts.json` in your project's root directory.
 
-### Configuration Structure
+The extension will look for specific keys in this file.  
+If a key is not found, a built-in default prompt will be used.
 
-```mermaid
-classDiagram
-    class CustomPrompts {
-        +string suggestComment
-        +string getCodeRefinements
-        +string generateFileStructure
-    }
-    
-    class suggestComment {
-        Used for: Comment generation
-        Context: Current code context
-        Output: Inline comments
-    }
-    
-    class getCodeRefinements {
-        Used for: Code improvement suggestions
-        Context: Git diff + repo patterns
-        Output: Refinement suggestions
-    }
-    
-    class generateFileStructure {
-        Used for: Initial project structure
-        Context: Tech stack + selected repos
-        Output: Directory tree JSON
-    }
-    
-    CustomPrompts --> suggestComment
-    CustomPrompts --> getCodeRefinements
-    CustomPrompts --> generateFileStructure
-```
+---
 
-### Example Configuration
+### 🧩 Available Prompts and Placeholders
 
-Create `.ghostdev/prompts.json`:
+Here are the prompts you can customize and the placeholders that will be replaced with dynamic data.
 
-```typescript
+#### **1. suggestComment**
+Used to generate a **conventional commit message** for your staged changes.
+
+**Placeholders:**
+- `{{diffDataAsJson}}`: Will be replaced with a JSON string representing the staged files, each with a name and diff.
+
+---
+
+#### **2. codeRefinement**
+Used to **refactor the code** in your staged files.
+
+**Placeholders:**
+- `{{persona}}`: A JSON string describing the project's coding style and conventions.  
+- `{{diffDataAsJson}}`: The same JSON string of staged file diffs as above.
+
+---
+
+#### **3. generateFileStructure**
+Used to **generate the initial project structure** when initializing a new project.
+
+**Placeholders:**
+- `{{projectName}}`: The name of the project.  
+- `{{projectDescription}}`: The description of the project.  
+- `{{techStack}}`: A comma-separated string of the selected technologies (e.g., `"React, Node.js, Tailwind CSS"`).  
+- `{{persona}}`: The same coding style persona as above.
+
+---
+
+### 🧠 Example: `prompts.json`
+
+```json
 {
-  "suggestComment": "Analyze the code and suggest meaningful comments that explain complex logic, following JSDoc style for functions.",
+  "suggestComment": "You are a git expert. Write a concise, imperative commit message for the following changes. Your response must be only the message string.\n\nChanges:\n```json\n{{diffDataAsJson}}\n```",
+
+  "codeRefinement": "As a principal engineer, refactor the code described in the diff below. Adhere to the user's coding style. Only return a JSON array of the refined files.\n\nUser Persona:\n{{persona}}\n\nStaged Files:\n```json\n{{diffDataAsJson}}\n```",
   
-  "getCodeRefinements": "Review the staged changes and suggest improvements focusing on: performance optimization, code readability, error handling, and adherence to best practices from the reference repositories.",
-  
-  "generateFileStructure": "Generate a project structure that follows industry standards for the selected tech stack, incorporating patterns observed in the reference repositories."
+  "generateFileStructure": "Create a complete file and directory structure as a single JSON object for a new project.\n\nProject: {{projectName}}\nDescription: {{projectDescription}}\nTech: {{techStack}}\n\nFollow this coding style:\n{{persona}}"
 }
-```
 
 ---
 
-## 📊 Prompt Usage Flow
-
-```mermaid
-flowchart LR
-    A[User Action] --> B{Prompt Type?}
-    
-    B -->|Initial Setup| C[generateFileStructure]
-    B -->|Code Changes| D[getCodeRefinements]
-    B -->|Documentation| E[suggestComment]
-    
-    C --> F{Custom Prompt?}
-    D --> F
-    E --> F
-    
-    F -->|Yes| G[Load from prompts.json]
-    F -->|No| H[Use Default Prompt]
-    
-    G --> I[Merge with Context]
-    H --> I
-    
-    I --> J[Send to Gemini]
-    J --> K[Return AI Response]
-    
-    style C fill:#FFB6B9
-    style D fill:#FEC8D8
-    style E fill:#FFDFD3
-    style J fill:#FFD93D
-```
-
----
-
-## 🔍 Git Integration Details
-
-```mermaid
-gantt
-    title Git Operations Timeline
-    dateFormat X
-    axisFormat %s
-    
-    section File Changes
-    User writes code        :0, 10
-    User stages changes     :10, 12
-    
-    section GhostDev Detection
-    File watcher triggered  :12, 13
-    Calculate diff          :13, 15
-    
-    section AI Processing
-    Build context           :15, 16
-    API call to Gemini      :16, 20
-    Parse response          :20, 21
-    
-    section User Interaction
-    Display suggestions     :21, 25
-    User reviews            :25, 30
-    Apply changes           :30, 32
-    Suggest commit on terminal :32, 34
-```
 
 
 ## 🎭 User Interaction States
@@ -564,51 +331,6 @@ journey
       Add Custom Prompts: 4: User
       Fine-tune Settings: 4: User
 ```
-
----
-
-## 💡 Best Practices
-
-```mermaid
-mindmap
-  root((Best Practices))
-    Repository Selection
-      Choose Similar Projects
-      Include Style Guides
-      Quality Over Quantity
-    Custom Prompts
-      Be Specific
-      Include Context
-      Test Iterations
-    Git Workflow
-      Commit Frequently
-      Stage Intentionally
-      Review Suggestions
-    Code Quality
-      Accept Wisely
-      Modify When Needed
-      Learn Patterns
-```
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow this workflow:
-
-```mermaid
-gitGraph
-    commit id: "Initial"
-    branch feature
-    checkout feature
-    commit id: "Add Feature"
-    commit id: "Write Tests"
-    commit id: "Update Docs"
-    checkout main
-    merge feature
-    commit id: "Release"
-```
-
 ---
 
 ## 📝 License
