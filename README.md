@@ -251,38 +251,10 @@ Used to **generate the initial project structure** when initializing a new proje
   
   "generateFileStructure": "Create a complete file and directory structure as a single JSON object for a new project.\n\nProject: {{projectName}}\nDescription: {{projectDescription}}\nTech: {{techStack}}\n\nFollow this coding style:\n{{persona}}"
 }
+```
 
 ---
 
-
-
-## 🎭 User Interaction States
-
-```mermaid
-stateDiagram-v2
-    direction LR
-    
-    [*] --> ViewingSuggestions: Suggestions Generated
-    
-    ViewingSuggestions --> Reviewing: User Opens Panel
-    Reviewing --> Accepting: Click Accept
-    Reviewing --> Rejecting: Click Reject
-    Reviewing --> Modifying: Click Modify
-    
-    Accepting --> Applied: Changes Applied
-    Rejecting --> Discarded: Suggestions Discarded
-    Modifying --> Editing: Open Editor
-    
-    Editing --> Applied: Save Changes
-    
-    Applied --> [*]: Return to Code
-    Discarded --> [*]: Return to Code
-    
-    note right of Reviewing
-        User can review each
-        suggestion individually
-    end note
-```
 
 ## 📦 Extension Structure
 
