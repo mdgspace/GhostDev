@@ -17,12 +17,6 @@
         "command": "extension.improveCode",
         "title": "Improve Code"
       }
-    ],
-    "authentication": [
-      {
-        "label": "GitHub",
-        "id": "github"
-      }
     ]
   },
   "scripts": {
