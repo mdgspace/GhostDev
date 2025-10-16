@@ -120,7 +120,8 @@ async function analyzeCommits(owner: string, repo: string, headers: any, accumul
 }
 
 function getDominantKey(obj: { [key: string]: number }): string {
-    return Object.keys(obj).reduce((a, b) => (obj[a] > obj[b] ? a : b), 'unknown');
+    if (Object.keys(obj).length === 0) return 'unknown';
+    return Object.keys(obj).reduce((a, b) => (obj[a] > obj[b] ? a : b));
 }
 
 export async function fetchRepoPersona(repoNames: string[]): Promise<any> {
@@ -153,24 +154,45 @@ export async function fetchRepoPersona(repoNames: string[]): Promise<any> {
         username,
     };
 
-    for (const repoName of repoNames) {
-      const repoDetailsResponse = await fetch(`https://api.github.com/repos/${username}/${repoName}`, { headers });
-      if (!repoDetailsResponse.ok) continue;
-      const repoDetails = await repoDetailsResponse.json() as any;
-      const defaultBranch = repoDetails.default_branch;
+    for (const repoIdentifier of repoNames) {
+        let owner = username;
+        let repoName;
 
-      const treeResponse = await fetch(`https://api.github.com/repos/${username}/${repoName}/git/trees/${defaultBranch}?recursive=1`, { headers });
-      if (!treeResponse.ok) {
-        continue;
-      }
-      const treeData = await treeResponse.json() as any;
+        const urlMatch = repoIdentifier.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)/);
 
-      if(treeData.tree) {
-        const filesToAnalyze = analyzeTree(treeData.tree, accumulator);
-        await Promise.all(filesToAnalyze.map(url => analyzeFileContent(url, headers, accumulator)));
-      }
-      
-      await analyzeCommits(username, repoName, headers, accumulator);
+        if (urlMatch) {
+            owner = urlMatch[1];
+            repoName = urlMatch[2].replace(/\.git$/, "");
+        } else {
+            repoName = repoIdentifier;
+        }
+
+        try {
+            const repoDetailsResponse = await fetch(`https://api.github.com/repos/${owner}/${repoName}`, { headers });
+            if (!repoDetailsResponse.ok) {
+                vscode.window.showWarningMessage(`Could not fetch details for ${owner}/${repoName}. Skipping.`);
+                continue;
+            }
+            
+            const repoDetails = await repoDetailsResponse.json() as any;
+            const defaultBranch = repoDetails.default_branch;
+
+            const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repoName}/git/trees/${defaultBranch}?recursive=1`, { headers });
+            if (!treeResponse.ok) {
+                continue;
+            }
+            const treeData = await treeResponse.json() as any;
+
+            if (treeData.tree) {
+                const filesToAnalyze = analyzeTree(treeData.tree, accumulator);
+                await Promise.all(filesToAnalyze.map(url => analyzeFileContent(url, headers, accumulator)));
+            }
+            
+            await analyzeCommits(owner, repoName, headers, accumulator);
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to analyze repo: ${owner}/${repoName}`);
+            continue;
+        }
     }
 
     const dominantIndent = getDominantKey(accumulator.indentation).split('_');

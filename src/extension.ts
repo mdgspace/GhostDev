@@ -48,17 +48,21 @@ async function initializeProject() {
 			const quickPick = vscode.window.createQuickPick();
 			quickPick.items = repoNames;
 			quickPick.canSelectMany = true;
-			quickPick.placeholder = 'Select reference repos or type a new one and press Enter';
+			quickPick.placeholder = 'Select from your repos or paste a public GitHub URL';
 			quickPick.title = 'Select Repositories';
 
 			quickPick.onDidAccept(() => {
-				const selected = quickPick.selectedItems.map(item => item.label);
-				const customRepo = quickPick.value.trim();
-				if (customRepo && !selected.includes(customRepo)) {
-					selected.push(customRepo);
-				}
-				quickPick.hide();
-				resolve(selected);
+				const selectedLabels = quickPick.selectedItems.map(item => item.label);
+    			const typedValue = quickPick.value.trim();
+    			const githubUrlRegex = /^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-._]+$/;
+
+    			// If the user typed a valid GitHub URL that isn't already selected, add it.
+    			if (typedValue && githubUrlRegex.test(typedValue) && !selectedLabels.includes(typedValue)) {
+        			selectedLabels.push(typedValue);
+    			}
+
+    			quickPick.hide();
+    			resolve(selectedLabels);
 			});
 
 			quickPick.onDidHide(() => {
