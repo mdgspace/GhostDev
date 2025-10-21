@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { GitExtension, Repository } from './git';
 import { getDiffData, openDifftool } from './utils/gitUtils';
-import { getCodeRefinements, suggestComment, ProjectDetails, generateFileStructure } from './utils/geminiUtils';
+import { getCodeRefinements, suggestComment, ProjectDetails, generateFileStructure, generateDirectoryOverviews } from './utils/geminiUtils';
 import { updateFilesInWorkspace, executeCommand, makeFileStructure } from './utils/terminalUtils';
 import { fetchAllRepos } from './utils/githubUtils';
 import { techStackData } from './assets/techStackData';
+import { updateReadmes } from './utils/readmeUtils';
 
 async function initializeProject() {
 	const name = await vscode.window.showInputBox({
@@ -146,6 +147,15 @@ async function onFilesStaged() {
             progress.report({ message: "Applying code enchantments..." });
             const shouldIncludeDescription = selection === hauntWithDescButton;
             await updateFilesInWorkspace(refinedCode, shouldIncludeDescription);
+
+			// --- generate directory READMEs ---
+			progress.report({ message: "Generating directory README overviews..." });
+			try {
+				const dirOverviews = await generateDirectoryOverviews(refinedCode);
+				await updateReadmes(dirOverviews);
+			} catch (e: any) {
+				console.warn('Failed to generate directory overviews:', e?.message || e);
+			}
 
 			// --- openDiffTool ---
 			progress.report({ message: "Opening difftool for your review..." });

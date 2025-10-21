@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "types": ["node", "vscode"]
   },
   "include": ["src/**/*.ts"],
