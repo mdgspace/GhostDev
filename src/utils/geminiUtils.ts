@@ -211,3 +211,60 @@ async function conventionalCommitPrompt(files: GitDiffData[]): Promise<string> {
 
     return finalPrompt;
 }
+
+export async function generateDirectoryOverviews(refinedFiles: RefinedCode[]): Promise<Record<string, string>> {
+    const apiKey = key();
+    const geminiUrl = url();
+
+    if (!Array.isArray(refinedFiles) || refinedFiles.length === 0) {
+        return {};
+    }
+
+    // Group files by directory
+    const byDir: Record<string, { files: Array<{ name: string; desc: string }> }> = {};
+    for (const f of refinedFiles) {
+        if (!f || typeof f.name !== 'string') continue;
+        const dir = path.posix.dirname(f.name).replace(/^\.$/, '.');
+        if (!byDir[dir]) byDir[dir] = { files: [] };
+        byDir[dir].files.push({ name: path.posix.basename(f.name), desc: f.desc });
+    }
+
+    const promptTemplate = await getCustomPrompt('generateDirectoryOverview');
+    const directoriesJson = JSON.stringify(byDir, null, 2);
+    const finalPrompt = promptTemplate.replace('{{directoriesJson}}', directoriesJson);
+
+    const response = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: finalPrompt }] }],
+            generationConfig: {
+                responseMimeType: 'application/json',
+            },
+        }),
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Gemini API request failed with status ${response.status}: ${errorBody}`);
+    }
+
+    const data = await response.json() as any;
+    const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!responseText) {
+        throw new Error('No valid content found in Gemini API response.');
+    }
+
+    const errors: any[] = [];
+    const parsed = parse(responseText, errors) as Record<string, string> | undefined;
+    if (errors.length > 0) {
+        console.warn('JSONC parser encountered recoverable errors while parsing directory overviews:', errors);
+    }
+    if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Failed to parse directory overview JSON from API response.');
+    }
+    return parsed;
+}

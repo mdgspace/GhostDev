@@ -5,6 +5,7 @@ interface CustomPrompts {
     suggestComment?: string;
     getCodeRefinements?: string;
     generateFileStructure?: string;
+    generateDirectoryOverview?: string;
 }
 
 const defaultPrompts = {
@@ -103,6 +104,21 @@ Generate a JSON object representing the project's file structure.
 1.  **JSON ONLY:** Your entire response must be a single, raw JSON object.
 2.  **NO MARKDOWN:** Do not wrap the JSON in markdown code blocks like \`\`\`json.
 3.  **NO EXTRA TEXT:** Do not include ANY text, headers, footers, explanations, or conversational filler before or after the JSON object. Your response must start with { and end with }.
+`
+    ,
+    generateDirectoryOverview: `
+You are an expert technical writer assisting in maintaining internal project documentation.
+
+Task: Given a list of directories with their files and each file's high-level description, produce a concise overview for every directory that accurately reflects its purpose and contents.
+
+Output Requirements:
+- Respond with a single JSON object mapping directory paths to a short paragraph summary string.
+- Keep each summary under 120 words.
+- Be specific but succinct; mention notable files, responsibilities, and how the directory fits in the project when inferable from the file descriptions.
+- Do NOT include code fences or any text other than the raw JSON object.
+
+Input Data:
+{{directoriesJson}}
 `
 };
 
