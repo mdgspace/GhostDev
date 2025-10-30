@@ -3,6 +3,8 @@ import { GitExtension, Repository } from './git';
 import { getDiffData, openDifftool } from './utils/gitUtils';
 import { getCodeRefinements, suggestComment, ProjectDetails, generateFileStructure, generateDirectoryOverviews } from './utils/geminiUtils';
 import { updateFilesInWorkspace, executeCommand, makeFileStructure } from './utils/terminalUtils';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { fetchAllRepos } from './utils/githubUtils';
 import { techStackData } from './assets/techStackData';
 import { updateReadmes } from './utils/readmeUtils';
@@ -181,19 +183,84 @@ function setupRepositoryWatcher(context: vscode.ExtensionContext, repository: Re
 	const indexPath = vscode.Uri.joinPath(repository.rootUri, '.git/index');
 	const watcher = vscode.workspace.createFileSystemWatcher(indexPath.fsPath);
 
-	const handleIndexChange = () => {
-		setTimeout(() => {
-			if (repository.state.indexChanges.length > 0) {
-				onFilesStaged();
+	const execAsync = promisify(exec);
+	let debounceTimer: NodeJS.Timeout | undefined;
+	const DEBOUNCE_MS = 300;
+
+	// Track HEAD to ignore index updates caused by commits
+	let lastHead: string | null = null;
+	let lastHeadChangeAt = 0;
+	const COMMIT_COOLDOWN_MS = 1000; // 1s cooldown after HEAD change
+
+	// Initialize lastHead
+	(async () => {
+		try {
+			const { stdout } = await execAsync('git rev-parse --verify HEAD', { cwd: repository.rootUri.fsPath });
+			lastHead = stdout.trim() || null;
+		} catch (err) {
+			// No HEAD yet or failed to read; leave as null
+			lastHead = null;
+		}
+	})();
+
+	const checkAndHandleIndexChange = async () => {
+		try {
+			// Check for HEAD changes. If HEAD changed, update the lastHead and set a cooldown
+			let currentHead: string | null = null;
+			try {
+				const { stdout } = await execAsync('git rev-parse --verify HEAD', { cwd: repository.rootUri.fsPath });
+				currentHead = stdout.trim() || null;
+			} catch (headErr) {
+				currentHead = null;
 			}
-		}, 100);
+
+			if (lastHead !== currentHead) {
+				lastHead = currentHead;
+				lastHeadChangeAt = Date.now();
+				// HEAD changed, ignore this index update
+				return;
+			}
+
+			// Skip handling to avoid reacting to commit index writes
+			if (Date.now() - lastHeadChangeAt < COMMIT_COOLDOWN_MS) {
+				return;
+			}
+
+			// Only trigger when there are real staged files.
+			const { stdout } = await execAsync('git diff --staged --name-only', { cwd: repository.rootUri.fsPath });
+			const staged = stdout.trim();
+			if (staged.length === 0) {
+				// No staged files. Ignore.
+				return;
+			}
+
+			// There are staged files. Call the handler.
+			onFilesStaged();
+		} catch (error: any) {
+			console.error('Failed to check staged files for repository watcher:', error?.stderr || error?.message || error);
+		}
 	};
 
-	watcher.onDidChange(handleIndexChange);
-	watcher.onDidCreate(handleIndexChange);
-	watcher.onDidDelete(handleIndexChange);
+	const scheduleCheck = () => {
+		if (debounceTimer) {
+			clearTimeout(debounceTimer);
+		}
+		debounceTimer = setTimeout(() => {
+			debounceTimer = undefined;
+			void checkAndHandleIndexChange();
+		}, DEBOUNCE_MS);
+	};
 
-	context.subscriptions.push(watcher);
+	watcher.onDidChange(scheduleCheck);
+	watcher.onDidCreate(scheduleCheck);
+	watcher.onDidDelete(scheduleCheck);
+
+	// Ensure timers are cleared when the extension is deactivated or repository closed.
+	context.subscriptions.push(watcher, new vscode.Disposable(() => {
+		if (debounceTimer) {
+			clearTimeout(debounceTimer);
+		}
+	}));
 }
 
 export async function activate(context: vscode.ExtensionContext) {
