@@ -181,12 +181,35 @@ function setupRepositoryWatcher(context: vscode.ExtensionContext, repository: Re
 	const indexPath = vscode.Uri.joinPath(repository.rootUri, '.git/index');
 	const watcher = vscode.workspace.createFileSystemWatcher(indexPath.fsPath);
 
+	let debounceHandle: NodeJS.Timeout | undefined;
+	let lastFingerprint = '';
+
 	const handleIndexChange = () => {
-		setTimeout(() => {
-			if (repository.state.indexChanges.length > 0) {
-				onFilesStaged();
+		if (debounceHandle) {
+			clearTimeout(debounceHandle);
+		}
+
+		debounceHandle = setTimeout(() => {
+			const staged = repository.state.indexChanges ?? [];
+
+			if (staged.length === 0) {
+				// Reset fingerprint so the next staging event is picked up.
+				lastFingerprint = '';
+				return;
 			}
-		}, 100);
+
+			const fingerprint = staged
+				.map(change => change.uri.fsPath)
+				.sort()
+				.join('|');
+
+			if (fingerprint === lastFingerprint) {
+				return;
+			}
+
+			lastFingerprint = fingerprint;
+			onFilesStaged();
+		}, 250);
 	};
 
 	watcher.onDidChange(handleIndexChange);
@@ -194,6 +217,13 @@ function setupRepositoryWatcher(context: vscode.ExtensionContext, repository: Re
 	watcher.onDidDelete(handleIndexChange);
 
 	context.subscriptions.push(watcher);
+	context.subscriptions.push(
+		new vscode.Disposable(() => {
+			if (debounceHandle) {
+				clearTimeout(debounceHandle);
+			}
+		})
+	);
 }
 
 export async function activate(context: vscode.ExtensionContext) {
