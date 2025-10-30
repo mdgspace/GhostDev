@@ -187,14 +187,53 @@ function setupRepositoryWatcher(context: vscode.ExtensionContext, repository: Re
 	let debounceTimer: NodeJS.Timeout | undefined;
 	const DEBOUNCE_MS = 300;
 
+	// Track HEAD to ignore index updates caused by commits
+	let lastHead: string | null = null;
+	let lastHeadChangeAt = 0;
+	const COMMIT_COOLDOWN_MS = 1000; // 1s cooldown after HEAD change
+
+	// Initialize lastHead
+	(async () => {
+		try {
+			const { stdout } = await execAsync('git rev-parse --verify HEAD', { cwd: repository.rootUri.fsPath });
+			lastHead = stdout.trim() || null;
+		} catch (err) {
+			// No HEAD yet or failed to read; leave as null
+			lastHead = null;
+		}
+	})();
+
 	const checkAndHandleIndexChange = async () => {
 		try {
+			// Check for HEAD changes. If HEAD changed, update the lastHead and set a cooldown
+			let currentHead: string | null = null;
+			try {
+				const { stdout } = await execAsync('git rev-parse --verify HEAD', { cwd: repository.rootUri.fsPath });
+				currentHead = stdout.trim() || null;
+			} catch (headErr) {
+				currentHead = null;
+			}
+
+			if (lastHead !== currentHead) {
+				lastHead = currentHead;
+				lastHeadChangeAt = Date.now();
+				// HEAD changed, ignore this index update
+				return;
+			}
+
+			// Skip handling to avoid reacting to commit index writes
+			if (Date.now() - lastHeadChangeAt < COMMIT_COOLDOWN_MS) {
+				return;
+			}
+
+			// Only trigger when there are real staged files.
 			const { stdout } = await execAsync('git diff --staged --name-only', { cwd: repository.rootUri.fsPath });
 			const staged = stdout.trim();
 			if (staged.length === 0) {
 				// No staged files. Ignore.
 				return;
 			}
+
 			// There are staged files. Call the handler.
 			onFilesStaged();
 		} catch (error: any) {
